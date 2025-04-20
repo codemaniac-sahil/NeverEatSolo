@@ -40,6 +40,11 @@ export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
   const [activeTab, setActiveTab] = useState<string>("login");
   const [isProcessingMicrosoftAuth, setIsProcessingMicrosoftAuth] = useState(false);
+  
+  // Function to continue without registration (demo mode)
+  const continueWithoutRegistration = () => {
+    navigate("/");
+  };
 
   // Handle Microsoft authentication redirect
   useEffect(() => {
@@ -278,15 +283,26 @@ export default function AuthPage() {
                 </div>
               </div>
               
-              <p className="mt-8 text-center text-sm text-neutral-700">
-                Don't have an account?{" "}
-                <button 
-                  onClick={() => setActiveTab("register")}
-                  className="font-medium text-primary hover:underline"
+              <div className="mt-8 space-y-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full border-dashed border-primary text-primary hover:bg-primary/5"
+                  onClick={continueWithoutRegistration}
                 >
-                  Sign up
-                </button>
-              </p>
+                  Continue without Registration (Demo Mode)
+                </Button>
+                
+                <p className="text-center text-sm text-neutral-700">
+                  Don't have an account?{" "}
+                  <button 
+                    onClick={() => setActiveTab("register")}
+                    className="font-medium text-primary hover:underline"
+                  >
+                    Sign up
+                  </button>
+                </p>
+              </div>
             </TabsContent>
             
             {/* Register Form */}
@@ -430,15 +446,26 @@ export default function AuthPage() {
                 </div>
               </div>
               
-              <p className="mt-8 text-center text-sm text-neutral-700">
-                Already have an account?{" "}
-                <button 
-                  onClick={() => setActiveTab("login")}
-                  className="font-medium text-primary hover:underline"
+              <div className="mt-8 space-y-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full border-dashed border-primary text-primary hover:bg-primary/5"
+                  onClick={continueWithoutRegistration}
                 >
-                  Sign in
-                </button>
-              </p>
+                  Continue without Registration (Demo Mode)
+                </Button>
+                
+                <p className="text-center text-sm text-neutral-700">
+                  Already have an account?{" "}
+                  <button 
+                    onClick={() => setActiveTab("login")}
+                    className="font-medium text-primary hover:underline"
+                  >
+                    Sign in
+                  </button>
+                </p>
+              </div>
             </TabsContent>
           </Tabs>
         </div>

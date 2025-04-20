@@ -10,6 +10,118 @@ import { format } from "date-fns";
 import CalendarSync from "./calendar-sync";
 import { Invitation, Restaurant, User } from "@shared/schema";
 
+// Toggle this to use mock data
+const DEMO_MODE = true;
+
+// Type for upcoming meals
+type UpcomingMeal = Invitation & { restaurant: Restaurant; partner: User };
+
+// Mock upcoming meals for demonstration
+const mockUpcomingMeals: UpcomingMeal[] = [
+  {
+    id: 301,
+    userId: 1,
+    partnerId: 101,
+    restaurantId: 201,
+    status: "accepted",
+    date: new Date().toISOString().split('T')[0], // Today
+    time: "19:00",
+    message: "Looking forward to trying their pasta!",
+    createdAt: new Date(),
+    outlookEventId: null,
+    calendarSynced: false,
+    lastCalendarSync: null,
+    // Restaurant details
+    restaurant: {
+      id: 201,
+      name: "La Trattoria Italiana",
+      cuisine: "Italian",
+      priceRange: "$$$",
+      address: "123 Main St, New York, NY",
+      locationLat: "40.7128",
+      locationLng: "-74.0060",
+      rating: "4.7",
+      image: "",
+      activeUserCount: 8
+    },
+    // Partner details
+    partner: {
+      id: 101,
+      username: "emma_foodie",
+      password: "",
+      name: "Emma Davis",
+      email: "emma@example.com",
+      bio: "Passionate about Italian cuisine and fine dining experiences.",
+      occupation: "Food Blogger",
+      profileImage: "",
+      age: 29,
+      phone: "",
+      isVerified: true,
+      foodPreferences: ["Pasta", "Wine", "Desserts"],
+      dietaryRestrictions: [],
+      cuisinePreferences: ["Italian", "French", "Mediterranean"],
+      diningStyles: ["Fine Dining", "Casual Dining"],
+      locationLat: "40.712",
+      locationLng: "-74.006",
+      lastActive: new Date(),
+      microsoftId: null,
+      microsoftRefreshToken: null,
+      useMicrosoftCalendar: false
+    }
+  },
+  {
+    id: 302,
+    userId: 1,
+    partnerId: 102,
+    restaurantId: 203,
+    status: "pending",
+    date: new Date(new Date().setDate(new Date().getDate() + 2)).toISOString().split('T')[0], // Day after tomorrow
+    time: "12:30",
+    message: "I've heard great things about their curry!",
+    createdAt: new Date(),
+    outlookEventId: null,
+    calendarSynced: false,
+    lastCalendarSync: null,
+    // Restaurant details
+    restaurant: {
+      id: 203,
+      name: "Spicy Thai Kitchen",
+      cuisine: "Thai",
+      priceRange: "$$",
+      address: "789 Canal St, New York, NY",
+      locationLat: "40.7130",
+      locationLng: "-74.0065",
+      rating: "4.5",
+      image: "",
+      activeUserCount: 3
+    },
+    // Partner details
+    partner: {
+      id: 102,
+      username: "raj_spice",
+      password: "",
+      name: "Raj Patel",
+      email: "raj@example.com",
+      bio: "Spicy food enthusiast always looking for authentic international cuisines.",
+      occupation: "Chef",
+      profileImage: "",
+      age: 34,
+      phone: "",
+      isVerified: true,
+      foodPreferences: ["Spicy Food", "Street Food"],
+      dietaryRestrictions: ["Vegetarian"],
+      cuisinePreferences: ["Indian", "Thai", "Mexican"],
+      diningStyles: ["Casual Dining", "Food Trucks"],
+      locationLat: "40.715",
+      locationLng: "-74.009",
+      lastActive: new Date(),
+      microsoftId: null,
+      microsoftRefreshToken: null,
+      useMicrosoftCalendar: false
+    }
+  }
+];
+
 export default function UpcomingMeals() {
   const { user } = useAuth();
   const [showAll, setShowAll] = useState(false);
