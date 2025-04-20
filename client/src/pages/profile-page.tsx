@@ -11,6 +11,8 @@ import MobileNav from "@/components/layout/mobile-nav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   Form,
   FormControl,
@@ -49,6 +51,7 @@ const profileFormSchema = z.object({
   age: z.coerce.number().min(18, "You must be at least 18 years old.").optional(),
   phone: z.string().optional(),
   profileImage: z.string().optional(),
+  useMicrosoftCalendar: z.boolean().optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -69,6 +72,7 @@ export default function ProfilePage() {
       age: user?.age || undefined,
       phone: user?.phone || "",
       profileImage: user?.profileImage || "",
+      useMicrosoftCalendar: user?.useMicrosoftCalendar || false,
     },
   });
   
@@ -122,7 +126,7 @@ export default function ProfilePage() {
               <CardHeader className="text-center">
                 <div className="flex justify-center mb-4">
                   <Avatar className="w-24 h-24 border-4 border-white shadow">
-                    <AvatarImage src={user.profileImage} alt={user.name} />
+                    <AvatarImage src={user.profileImage || undefined} alt={user.name} />
                     <AvatarFallback className="text-2xl">{getInitials(user.name)}</AvatarFallback>
                   </Avatar>
                 </div>
@@ -200,7 +204,7 @@ export default function ProfilePage() {
                             <div className="relative">
                               <Avatar className="w-20 h-20">
                                 <AvatarImage 
-                                  src={form.watch("profileImage")} 
+                                  src={form.watch("profileImage") || undefined} 
                                   alt={user.name} 
                                 />
                                 <AvatarFallback className="text-xl">{getInitials(user.name)}</AvatarFallback>
@@ -438,8 +442,15 @@ export default function ProfilePage() {
                               id="calendar-sync"
                               checked={user.useMicrosoftCalendar === true}
                               onCheckedChange={(checked) => {
+                                const currentValues = form.getValues();
                                 updateProfile.mutate({
-                                  ...form.getValues(),
+                                  name: currentValues.name,
+                                  email: currentValues.email,
+                                  bio: currentValues.bio,
+                                  occupation: currentValues.occupation,
+                                  age: currentValues.age,
+                                  phone: currentValues.phone,
+                                  profileImage: currentValues.profileImage,
                                   useMicrosoftCalendar: checked
                                 });
                               }}
