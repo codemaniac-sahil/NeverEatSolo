@@ -7,13 +7,18 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle, MessageSquare, MapPin } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
+import CalendarSync from "./calendar-sync";
+import { Invitation, Restaurant, User } from "@shared/schema";
 
 export default function UpcomingMeals() {
   const { user } = useAuth();
   const [showAll, setShowAll] = useState(false);
 
+  // Type for upcoming meals
+  type UpcomingMeal = Invitation & { restaurant: Restaurant; partner: User };
+
   // Fetch upcoming meals
-  const { data: upcomingMeals = [], isLoading } = useQuery({
+  const { data: upcomingMeals = [], isLoading } = useQuery<UpcomingMeal[]>({
     queryKey: ["/api/meals/upcoming"],
     enabled: !!user
   });
@@ -62,7 +67,7 @@ export default function UpcomingMeals() {
         ) : (
           <>
             <div className="space-y-3">
-              {displayMeals.map((meal: any) => (
+              {displayMeals.map((meal: UpcomingMeal) => (
                 <div key={meal.id} className="bg-neutral-50 rounded-lg p-4 border border-neutral-200">
                   <div className="flex justify-between items-start">
                     <div>
@@ -118,6 +123,9 @@ export default function UpcomingMeals() {
                       Directions
                     </Button>
                   </div>
+                  
+                  {/* Calendar Sync Component */}
+                  {meal.status === "accepted" && <CalendarSync invitation={meal} />}
                 </div>
               ))}
             </div>
