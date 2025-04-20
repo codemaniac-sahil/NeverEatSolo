@@ -57,6 +57,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint for updating user preferences (from onboarding)
+  app.patch("/api/users/:id/preferences", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    if (req.user?.id !== parseInt(req.params.id)) return res.status(403).json({ message: "Forbidden" });
+
+    try {
+      const { 
+        gender, 
+        dateOfBirth, 
+        bio, 
+        occupation, 
+        dietaryRestrictions = [], 
+        cuisinePreferences = [], 
+        diningStyles = [] 
+      } = req.body;
+      
+      // Create the update data
+      const updateData: Partial<any> = {};
+      
+      if (gender) updateData.gender = gender;
+      if (dateOfBirth) updateData.dateOfBirth = dateOfBirth;
+      if (bio !== undefined) updateData.bio = bio;
+      if (occupation !== undefined) updateData.occupation = occupation;
+      if (dietaryRestrictions.length) updateData.dietaryRestrictions = dietaryRestrictions;
+      if (cuisinePreferences.length) updateData.cuisinePreferences = cuisinePreferences;
+      if (diningStyles.length) updateData.diningStyles = diningStyles;
+      
+      const updatedUser = await storage.updateUser(req.user.id, updateData);
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Don't return password
+      const { password: _, ...userWithoutPassword } = updatedUser;
+      res.json(userWithoutPassword);
+    } catch (err) {
+      console.error("Error updating user preferences:", err);
+      res.status(500).json({ message: "Failed to update user preferences" });
+    }
+  });
+
   // Restaurant related routes
   app.get("/api/restaurants/nearby", async (req, res) => {
     try {
