@@ -1,10 +1,11 @@
 import { users, type User, type InsertUser, restaurants, type Restaurant, type InsertRestaurant, invitations, type Invitation, type InsertInvitation } from "@shared/schema";
-import * as session from "express-session";
+import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { db } from "./db";
 import { eq, or, and, gte, sql } from "drizzle-orm";
 import { pool } from "./db";
 
+// @ts-ignore - Type definition issue with connect-pg-simple
 const PostgresSessionStore = connectPg(session);
 
 // Storage interface - Keep the same
