@@ -8,6 +8,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import SiteHeader from "@/components/layout/site-header";
 import MobileNav from "@/components/layout/mobile-nav";
+import DiningHistory from "@/components/profile/dining-history";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,6 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
 import {
   Form,
   FormControl,
@@ -205,9 +207,10 @@ export default function ProfilePage() {
               </CardHeader>
               <CardContent>
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  <TabsList className="grid w-full grid-cols-4">
+                  <TabsList className="grid w-full grid-cols-5">
                     <TabsTrigger value="general">General</TabsTrigger>
                     <TabsTrigger value="preferences">Food Preferences</TabsTrigger>
+                    <TabsTrigger value="history">Dining History</TabsTrigger>
                     <TabsTrigger value="verification">Verification</TabsTrigger>
                     <TabsTrigger value="integrations">Integrations</TabsTrigger>
                   </TabsList>
@@ -611,13 +614,92 @@ export default function ProfilePage() {
                   
                   {/* Verification Tab */}
                   <TabsContent value="verification">
-                    <div className="p-4 text-center">
-                      <User className="h-12 w-12 mx-auto text-neutral-400" />
-                      <h3 className="mt-4 text-lg font-medium">Account Verification</h3>
-                      <p className="mt-2 text-neutral-600">
-                        Coming soon! You will be able to verify your identity and 
-                        connect social accounts for added security.
+                    <div className="p-6 space-y-6">
+                      <div className="flex items-center justify-center mb-2">
+                        <div className="bg-primary/10 p-3 rounded-full">
+                          <User className="h-8 w-8 text-primary" />
+                        </div>
+                      </div>
+                      
+                      <h3 className="text-lg font-medium text-center">Account Verification</h3>
+                      <p className="text-center text-neutral-600 mb-6">
+                        Verify your identity to build trust with other users and get access to premium features.
                       </p>
+                      
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg border">
+                          <div className="flex items-center gap-3">
+                            <div className="bg-primary/10 p-2 rounded-full">
+                              <Mail className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                              <h4 className="font-medium">Email Verification</h4>
+                              <p className="text-sm text-neutral-600">Verify your email address</p>
+                            </div>
+                          </div>
+                          <Badge variant="outline" className="bg-green-100 text-green-800 border-none">
+                            Verified
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg border">
+                          <div className="flex items-center gap-3">
+                            <div className="bg-neutral-200 p-2 rounded-full">
+                              <Phone className="h-5 w-5 text-neutral-500" />
+                            </div>
+                            <div>
+                              <h4 className="font-medium">Phone Verification</h4>
+                              <p className="text-sm text-neutral-600">Verify your phone number</p>
+                            </div>
+                          </div>
+                          <Button size="sm" variant="outline">
+                            Verify
+                          </Button>
+                        </div>
+                        
+                        <div className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg border">
+                          <div className="flex items-center gap-3">
+                            <div className="bg-neutral-200 p-2 rounded-full">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-neutral-500">
+                                <path d="M12 2 L19 7 V17 L12 22 L5 17 V7 L12 2" />
+                                <circle cx="12" cy="12" r="3" />
+                              </svg>
+                            </div>
+                            <div>
+                              <h4 className="font-medium">ID Verification</h4>
+                              <p className="text-sm text-neutral-600">Verify your identity with a government ID</p>
+                            </div>
+                          </div>
+                          <Button size="sm" variant="outline">
+                            Verify
+                          </Button>
+                        </div>
+                        
+                        <div className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg border">
+                          <div className="flex items-center gap-3">
+                            <div className="bg-neutral-200 p-2 rounded-full">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-neutral-500">
+                                <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
+                                <rect x="2" y="9" width="4" height="12" />
+                                <circle cx="4" cy="4" r="2" />
+                              </svg>
+                            </div>
+                            <div>
+                              <h4 className="font-medium">LinkedIn Verification</h4>
+                              <p className="text-sm text-neutral-600">Verify your professional identity</p>
+                            </div>
+                          </div>
+                          <Button size="sm" variant="outline">
+                            Connect
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-6">
+                        <p className="text-center text-neutral-500 text-sm">
+                          Verifying your identity helps create a safer community for everyone.
+                        </p>
+                      </div>
                     </div>
                   </TabsContent>
                   
