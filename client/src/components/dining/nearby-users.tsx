@@ -8,6 +8,105 @@ import { Card, CardContent } from "@/components/ui/card";
 import { User } from "@shared/schema";
 import { calculateCompatibilityScore } from "@shared/constants";
 
+// Toggle this to use mock data
+const DEMO_MODE = true;
+
+// Mock nearby users for demonstration
+const mockNearbyUsers: User[] = [
+  {
+    id: 101,
+    username: "emma_foodie",
+    password: "",
+    name: "Emma Davis",
+    email: "emma@example.com",
+    bio: "Passionate about Italian cuisine and fine dining experiences. I love exploring new restaurants on weekends.",
+    occupation: "Food Blogger",
+    profileImage: "",
+    age: 29,
+    phone: "",
+    isVerified: true,
+    foodPreferences: ["Pasta", "Wine", "Desserts"],
+    dietaryRestrictions: [],
+    cuisinePreferences: ["Italian", "French", "Mediterranean"],
+    diningStyles: ["Fine Dining", "Casual Dining"],
+    locationLat: "40.712",
+    locationLng: "-74.006",
+    lastActive: new Date(),
+    microsoftId: null,
+    microsoftRefreshToken: null,
+    useMicrosoftCalendar: false
+  },
+  {
+    id: 102,
+    username: "raj_spice",
+    password: "",
+    name: "Raj Patel",
+    email: "raj@example.com",
+    bio: "Spicy food enthusiast always looking for authentic international cuisines. Love trying new dishes!",
+    occupation: "Chef",
+    profileImage: "",
+    age: 34,
+    phone: "",
+    isVerified: true,
+    foodPreferences: ["Spicy Food", "Street Food"],
+    dietaryRestrictions: ["Vegetarian"],
+    cuisinePreferences: ["Indian", "Thai", "Mexican"],
+    diningStyles: ["Casual Dining", "Food Trucks"],
+    locationLat: "40.715",
+    locationLng: "-74.009",
+    lastActive: new Date(),
+    microsoftId: null,
+    microsoftRefreshToken: null,
+    useMicrosoftCalendar: false
+  },
+  {
+    id: 103,
+    username: "sophie_health",
+    password: "",
+    name: "Sophie Kim",
+    email: "sophie@example.com",
+    bio: "Health-conscious foodie looking for nutritious and delicious meals. I enjoy conversations about wellness and food.",
+    occupation: "Nutritionist",
+    profileImage: "",
+    age: 31,
+    phone: "",
+    isVerified: true,
+    foodPreferences: ["Organic", "Plant-based", "Seafood"],
+    dietaryRestrictions: ["Gluten-Free"],
+    cuisinePreferences: ["Japanese", "Korean", "Mediterranean"],
+    diningStyles: ["Healthy Eating", "Farm-to-Table"],
+    locationLat: "40.718",
+    locationLng: "-74.003",
+    lastActive: new Date(),
+    microsoftId: null,
+    microsoftRefreshToken: null,
+    useMicrosoftCalendar: false
+  },
+  {
+    id: 104,
+    username: "carlos_taste",
+    password: "",
+    name: "Carlos Rodriguez",
+    email: "carlos@example.com",
+    bio: "Food enthusiast who loves exploring different cuisines. I'm always up for trying new restaurants and dishes!",
+    occupation: "Food Photographer",
+    profileImage: "",
+    age: 32,
+    phone: "",
+    isVerified: true,
+    foodPreferences: ["Tapas", "Grilled", "Seafood"],
+    dietaryRestrictions: [],
+    cuisinePreferences: ["Spanish", "Mexican", "Latin American"],
+    diningStyles: ["Social Dining", "Wine Pairing"],
+    locationLat: "40.710",
+    locationLng: "-74.012",
+    lastActive: new Date(),
+    microsoftId: null,
+    microsoftRefreshToken: null,
+    useMicrosoftCalendar: false
+  }
+];
+
 interface NearbyUsersProps {
   onInvite: (user: User) => void;
 }
@@ -38,11 +137,15 @@ export default function NearbyUsers({ onInvite }: NearbyUsersProps) {
     }
   }, []);
 
-  // Fetch nearby users
-  const { data: nearbyUsers = [], isLoading } = useQuery<User[]>({
+  // Fetch nearby users from API or use mock data in demo mode
+  const { data: apiNearbyUsers = [], isLoading: isApiLoading } = useQuery<User[]>({
     queryKey: ["/api/users/nearby", coordinates?.lat, coordinates?.lng],
-    enabled: !!coordinates && !!user,
+    enabled: !DEMO_MODE && !!coordinates && !!user,
   });
+  
+  // Use mock data in demo mode, otherwise use data from API
+  const nearbyUsers = DEMO_MODE ? mockNearbyUsers : apiNearbyUsers;
+  const isLoading = DEMO_MODE ? false : isApiLoading;
 
   // Helper distances for demonstration
   const distances = ["0.8 miles away", "1.2 miles away", "0.5 miles away", "1.5 miles away"];

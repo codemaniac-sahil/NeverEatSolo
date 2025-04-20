@@ -5,6 +5,49 @@ import { Button } from "@/components/ui/button";
 import { Star, MapPin } from "lucide-react";
 import { Restaurant } from "@shared/schema";
 
+// Toggle this to use mock data
+const DEMO_MODE = true;
+
+// Mock restaurants for demonstration
+const mockRestaurants: Restaurant[] = [
+  {
+    id: 201,
+    name: "La Trattoria Italiana",
+    cuisine: "Italian",
+    priceRange: "$$$",
+    address: "123 Main St, New York, NY",
+    locationLat: "40.7128",
+    locationLng: "-74.0060",
+    rating: "4.7",
+    image: "",
+    activeUserCount: 8
+  },
+  {
+    id: 202,
+    name: "Sushi Sensation",
+    cuisine: "Japanese",
+    priceRange: "$$",
+    address: "456 Broadway, New York, NY",
+    locationLat: "40.7125",
+    locationLng: "-74.0058",
+    rating: "4.9",
+    image: "",
+    activeUserCount: 5
+  },
+  {
+    id: 203,
+    name: "Spicy Thai Kitchen",
+    cuisine: "Thai",
+    priceRange: "$$",
+    address: "789 Canal St, New York, NY",
+    locationLat: "40.7130",
+    locationLng: "-74.0065",
+    rating: "4.5",
+    image: "",
+    activeUserCount: 3
+  }
+];
+
 export default function NearbyRestaurants() {
   const [coordinates, setCoordinates] = useState<{ lat: string, lng: string } | null>(null);
   
@@ -30,11 +73,15 @@ export default function NearbyRestaurants() {
     }
   }, []);
 
-  // Fetch nearby restaurants
-  const { data: restaurants = [], isLoading } = useQuery({
+  // Fetch nearby restaurants from API or use mock data in demo mode
+  const { data: apiRestaurants = [], isLoading: isApiLoading } = useQuery<Restaurant[]>({
     queryKey: ["/api/restaurants/nearby", coordinates?.lat, coordinates?.lng],
-    enabled: !!coordinates,
+    enabled: !DEMO_MODE && !!coordinates,
   });
+  
+  // Use mock data in demo mode, otherwise use API data
+  const restaurants = DEMO_MODE ? mockRestaurants : apiRestaurants;
+  const isLoading = DEMO_MODE ? false : isApiLoading;
 
   // Mock distances for demonstration
   const distances = ["0.5 miles away", "0.8 miles away", "1.2 miles away"];

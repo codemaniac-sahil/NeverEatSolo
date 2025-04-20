@@ -12,10 +12,41 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { User } from "@shared/schema";
 
+// Toggle this to view the page without authentication
+const DEMO_MODE = true;
+
+// Mock user data for demo mode
+const mockUser: User = {
+  id: 1,
+  username: "demouser",
+  password: "",
+  name: "Demo User",
+  email: "demo@example.com",
+  bio: "I love trying new restaurants and meeting interesting people.",
+  occupation: "Food Enthusiast",
+  profileImage: "",
+  age: 28,
+  phone: "(555) 123-4567",
+  isVerified: true,
+  foodPreferences: ["Spicy Food", "Healthy Options", "Desserts"],
+  dietaryRestrictions: ["Gluten-Free"],
+  cuisinePreferences: ["Italian", "Japanese", "Mexican", "Thai"],
+  diningStyles: ["Casual Dining", "Fine Dining"],
+  locationLat: "40.7128",
+  locationLng: "-74.0060",
+  lastActive: new Date(),
+  microsoftId: null,
+  microsoftRefreshToken: null,
+  useMicrosoftCalendar: false
+};
+
 export default function HomePage() {
-  const { user } = useAuth();
+  const { user: authUser } = useAuth();
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  
+  // Use mock user in demo mode, otherwise use authenticated user
+  const user = DEMO_MODE ? mockUser : authUser;
 
   // Fetch upcoming meals
   const { data: upcomingMeals = [] } = useQuery({
@@ -29,9 +60,9 @@ export default function HomePage() {
     setShowInviteModal(true);
   };
 
-  if (!user) return null;
+  if (!user && !DEMO_MODE) return null;
 
-  const firstName = user.name.split(' ')[0];
+  const firstName = user?.name.split(' ')[0] || "User";
   
   const getInitials = (name: string) => {
     return name

@@ -2,6 +2,9 @@ import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 import { Redirect, Route } from "wouter";
 
+// Toggle this to true to allow demo mode (bypass authentication)
+const DEMO_MODE = true;
+
 export function ProtectedRoute({
   path,
   component: Component,
@@ -10,6 +13,11 @@ export function ProtectedRoute({
   component: () => React.JSX.Element;
 }) {
   const { user, isLoading } = useAuth();
+
+  // Bypass authentication check in demo mode
+  if (DEMO_MODE) {
+    return <Route path={path} component={Component} />;
+  }
 
   if (isLoading) {
     return (
