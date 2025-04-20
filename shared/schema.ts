@@ -20,6 +20,10 @@ export const users = pgTable("users", {
   locationLat: text("location_lat"),
   locationLng: text("location_lng"),
   lastActive: timestamp("last_active").defaultNow().notNull(),
+  // Microsoft integration fields
+  microsoftId: text("microsoft_id"),
+  microsoftRefreshToken: text("microsoft_refresh_token"),
+  useMicrosoftCalendar: boolean("use_microsoft_calendar").default(false),
 });
 
 // Restaurant model
@@ -47,6 +51,10 @@ export const invitations = pgTable("invitations", {
   message: text("message"),
   status: text("status").default("pending").notNull(), // pending, accepted, declined
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  // Calendar integration fields
+  outlookEventId: text("outlook_event_id"),
+  calendarSynced: boolean("calendar_synced").default(false),
+  lastCalendarSync: timestamp("last_calendar_sync"),
 });
 
 // Define relations
@@ -71,6 +79,9 @@ export const insertUserSchema = createInsertSchema(users).omit({
   isVerified: true,
   foodPreferences: true,
   lastActive: true,
+  microsoftId: true,
+  microsoftRefreshToken: true,
+  useMicrosoftCalendar: true,
 });
 
 export const insertRestaurantSchema = createInsertSchema(restaurants).omit({
@@ -81,6 +92,9 @@ export const insertRestaurantSchema = createInsertSchema(restaurants).omit({
 export const insertInvitationSchema = createInsertSchema(invitations).omit({
   id: true,
   createdAt: true,
+  outlookEventId: true,
+  calendarSynced: true,
+  lastCalendarSync: true,
 });
 
 // Login schema
