@@ -82,8 +82,8 @@ export default function AuthPage() {
     <div className="min-h-screen flex flex-col md:flex-row">
       {/* Left side - Hero section */}
       <div className="md:w-1/2 bg-primary relative overflow-hidden flex items-center justify-center p-8">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary to-primary/70 z-0"></div>
-        <div className="bg-[url('https://images.unsplash.com/photo-1529566652340-2c41a1eb6d93')] bg-cover bg-center absolute inset-0 mix-blend-overlay opacity-40"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/80 to-primary/50 z-0"></div>
+        <div className="bg-[url('https://images.unsplash.com/photo-1529333166437-7750a6dd5a70')] bg-cover bg-center absolute inset-0 mix-blend-soft-light opacity-80"></div>
         
         <div className="relative z-10 text-white max-w-md">
           <h1 className="font-bold text-4xl md:text-5xl mb-4">Never Dine Alone</h1>
