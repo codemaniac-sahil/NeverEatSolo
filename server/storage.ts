@@ -29,6 +29,12 @@ export interface IStorage {
   getInvitation(id: number): Promise<Invitation | undefined>;
   createInvitation(invitation: InsertInvitation): Promise<Invitation>;
   updateInvitationStatus(id: number, status: string): Promise<Invitation | undefined>;
+  updateInvitationCalendarInfo(
+    id: number, 
+    outlookEventId: string, 
+    calendarSynced: boolean, 
+    lastCalendarSync: Date
+  ): Promise<Invitation | undefined>;
   getInvitationsForUser(userId: number): Promise<Invitation[]>;
   getUpcomingMeals(userId: number): Promise<(Invitation & { restaurant: Restaurant, partner: User })[]>;
   
@@ -209,6 +215,24 @@ export class DatabaseStorage implements IStorage {
     const [updatedInvitation] = await db
       .update(invitations)
       .set({ status })
+      .where(eq(invitations.id, id))
+      .returning();
+    return updatedInvitation;
+  }
+  
+  async updateInvitationCalendarInfo(
+    id: number, 
+    outlookEventId: string, 
+    calendarSynced: boolean, 
+    lastCalendarSync: Date
+  ): Promise<Invitation | undefined> {
+    const [updatedInvitation] = await db
+      .update(invitations)
+      .set({ 
+        outlookEventId, 
+        calendarSynced, 
+        lastCalendarSync 
+      })
       .where(eq(invitations.id, id))
       .returning();
     return updatedInvitation;

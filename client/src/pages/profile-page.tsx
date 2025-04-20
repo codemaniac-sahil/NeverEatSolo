@@ -184,10 +184,11 @@ export default function ProfilePage() {
               </CardHeader>
               <CardContent>
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  <TabsList className="grid w-full grid-cols-3">
+                  <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="general">General</TabsTrigger>
                     <TabsTrigger value="preferences">Food Preferences</TabsTrigger>
                     <TabsTrigger value="verification">Verification</TabsTrigger>
+                    <TabsTrigger value="integrations">Integrations</TabsTrigger>
                   </TabsList>
                   
                   {/* General Information Tab */}
@@ -362,6 +363,96 @@ export default function ProfilePage() {
                         Coming soon! You will be able to verify your identity and 
                         connect social accounts for added security.
                       </p>
+                    </div>
+                  </TabsContent>
+                  
+                  {/* Integrations Tab */}
+                  <TabsContent value="integrations">
+                    <div className="p-6 space-y-6">
+                      <div>
+                        <h3 className="text-lg font-medium mb-2">Microsoft Integration</h3>
+                        <p className="text-neutral-600 mb-4">
+                          Connect your Microsoft account to enable calendar syncing for your meal invitations.
+                        </p>
+                        
+                        <div className="bg-neutral-50 rounded-lg p-4 border">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-4">
+                              <div className="h-10 w-10 bg-[#f2f2f2] rounded-md flex items-center justify-center">
+                                <svg width="20" height="20" viewBox="0 0 24 24">
+                                  <path fill="#f25022" d="M1 1h10v10H1V1z"/>
+                                  <path fill="#00a4ef" d="M1 13h10v10H1V13z"/>
+                                  <path fill="#7fba00" d="M13 1h10v10H13V1z"/>
+                                  <path fill="#ffb900" d="M13 13h10v10H13V13z"/>
+                                </svg>
+                              </div>
+                              <div>
+                                <h4 className="font-medium">Microsoft Account</h4>
+                                <p className="text-sm text-neutral-500">
+                                  {user.microsoftId 
+                                    ? "Connected" 
+                                    : "Not connected"}
+                                </p>
+                              </div>
+                            </div>
+                            
+                            {user.microsoftId ? (
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => {
+                                    toast({
+                                      title: "Coming soon",
+                                      description: "Disconnecting Microsoft accounts will be available in a future update.",
+                                      variant: "default",
+                                    });
+                                  }}
+                                >
+                                  Disconnect
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  window.location.href = "/auth";
+                                }}
+                              >
+                                Connect
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {user.microsoftId && (
+                        <div>
+                          <h3 className="text-lg font-medium mb-2">Calendar Integration</h3>
+                          <p className="text-neutral-600 mb-4">
+                            Allow the application to automatically sync your meal invitations with your Microsoft Outlook calendar.
+                          </p>
+                          
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              id="calendar-sync"
+                              checked={user.useMicrosoftCalendar === true}
+                              onCheckedChange={(checked) => {
+                                updateProfile.mutate({
+                                  ...form.getValues(),
+                                  useMicrosoftCalendar: checked
+                                });
+                              }}
+                            />
+                            <Label htmlFor="calendar-sync">Enable calendar synchronization</Label>
+                          </div>
+                          
+                          <p className="text-sm text-neutral-500 mt-2">
+                            When enabled, accepted meal invitations will automatically be added to your calendar,
+                            and any updates to the invitation details will be reflected in your calendar events.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </TabsContent>
                 </Tabs>

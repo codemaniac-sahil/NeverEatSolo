@@ -160,6 +160,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch upcoming meals" });
     }
   });
+  
+  // Microsoft Calendar Integration
+  app.post("/api/invitations/:id/sync-calendar", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const { id } = req.params;
+      const { outlookEventId } = req.body;
+      
+      if (!outlookEventId) {
+        return res.status(400).json({ message: "Outlook event ID is required" });
+      }
+      
+      const invitation = await storage.getInvitation(parseInt(id));
+      if (!invitation) {
+        return res.status(404).json({ message: "Invitation not found" });
+      }
+      
+      // Check if the user is authorized to sync this invitation (sender or receiver)
+      if (invitation.senderId !== req.user.id && invitation.receiverId !== req.user.id) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      // Make sure user has Microsoft integration enabled
+      const user = await storage.getUser(req.user.id);
+      if (!user || !user.microsoftId) {
+        return res.status(400).json({ message: "Microsoft account not connected" });
+      }
+      
+      // Update invitation with calendar sync info
+      const updatedInvitation = await storage.updateInvitationCalendarInfo(
+        parseInt(id),
+        outlookEventId,
+        true,
+        new Date()
+      );
+      
+      res.json(updatedInvitation);
+    } catch (err) {
+      console.error("Error syncing calendar:", err);
+      res.status(500).json({ message: "Failed to sync with Microsoft calendar" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
