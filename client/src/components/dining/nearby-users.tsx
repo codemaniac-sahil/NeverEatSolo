@@ -187,7 +187,13 @@ export default function NearbyUsers({ onInvite }: NearbyUsersProps) {
 
   // Fetch nearby users from API or use mock data in demo mode
   const { data: apiNearbyUsers = [], isLoading: isApiLoading } = useQuery<User[]>({
-    queryKey: ["/api/users/nearby", coordinates?.lat, coordinates?.lng, radius],
+    queryKey: ["/api/users/nearby", coordinates?.lat || "0", coordinates?.lng || "0", radius],
+    queryFn: async () => {
+      if (!coordinates || !user) return [];
+      const response = await fetch(`/api/users/nearby?lat=${coordinates.lat}&lng=${coordinates.lng}&radius=${radius}`);
+      if (!response.ok) throw new Error("Failed to fetch nearby users");
+      return response.json();
+    },
     enabled: !DEMO_MODE && !!coordinates && !!user,
   });
   

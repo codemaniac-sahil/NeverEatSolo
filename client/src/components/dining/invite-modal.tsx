@@ -115,6 +115,12 @@ export default function InviteModal({ user, isOpen, onClose }: InviteModalProps)
   // Fetch nearby restaurants for the select dropdown
   const { data: restaurants = [] } = useQuery<Restaurant[]>({
     queryKey: ["/api/restaurants/nearby", coordinates?.lat || "0", coordinates?.lng || "0"],
+    queryFn: async () => {
+      if (!coordinates) return [];
+      const response = await fetch(`/api/restaurants/nearby?lat=${coordinates.lat}&lng=${coordinates.lng}`);
+      if (!response.ok) throw new Error("Failed to fetch restaurants");
+      return response.json();
+    },
     enabled: !!coordinates && isOpen,
   });
   

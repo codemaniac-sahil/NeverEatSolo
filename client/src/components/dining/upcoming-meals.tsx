@@ -129,6 +129,12 @@ export default function UpcomingMeals() {
   // Fetch upcoming meals from API when not in demo mode
   const { data: apiUpcomingMeals = [], isLoading: isApiLoading } = useQuery<UpcomingMeal[]>({
     queryKey: ["/api/meals/upcoming"],
+    queryFn: async () => {
+      if (!user) return [];
+      const response = await fetch("/api/meals/upcoming");
+      if (!response.ok) throw new Error("Failed to fetch upcoming meals");
+      return response.json();
+    },
     enabled: !DEMO_MODE && !!user
   });
   

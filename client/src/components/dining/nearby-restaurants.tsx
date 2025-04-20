@@ -119,7 +119,13 @@ export default function NearbyRestaurants() {
 
   // Fetch nearby restaurants from API or use mock data in demo mode
   const { data: apiRestaurants = [], isLoading: isApiLoading } = useQuery<Restaurant[]>({
-    queryKey: ["/api/restaurants/nearby", coordinates?.lat, coordinates?.lng, radius],
+    queryKey: ["/api/restaurants/nearby", coordinates?.lat || "0", coordinates?.lng || "0", radius],
+    queryFn: async () => {
+      if (!coordinates) return [];
+      const response = await fetch(`/api/restaurants/nearby?lat=${coordinates.lat}&lng=${coordinates.lng}&radius=${radius}`);
+      if (!response.ok) throw new Error("Failed to fetch restaurants");
+      return response.json();
+    },
     enabled: !DEMO_MODE && !!coordinates,
   });
   
