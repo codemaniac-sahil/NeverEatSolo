@@ -5,7 +5,7 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { User as SelectUser } from "@shared/schema";
+import { User as SelectUser, InsertUser } from "@shared/schema";
 
 declare global {
   namespace Express {
@@ -108,7 +108,7 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err, user) => {
+    passport.authenticate("local", (err: Error | null, user: SelectUser | false) => {
       if (err) return next(err);
       if (!user) return res.status(401).json({ message: "Invalid username or password" });
       
@@ -171,16 +171,28 @@ export function setupAuth(app: Express) {
           // Generate a random secure password (user won't need this for login)
           const password = await hashPassword(randomBytes(16).toString('hex'));
           
-          user = await storage.createUser({
+          // Create user object with standard fields only
+          const userToCreate: InsertUser & { 
+            microsoftId?: string, 
+            microsoftRefreshToken?: string,
+            isVerified?: boolean
+          } = {
             username,
             password,
             name: displayName || username,
             email,
+            // Extended fields
             microsoftId,
             microsoftRefreshToken: refreshToken,
             isVerified: true, // Microsoft login is considered verified
-          });
+          };
+          
+          user = await storage.createUser(userToCreate as InsertUser);
         }
+      }
+
+      if (!user) {
+        return res.status(500).json({ message: "Failed to create or find user" });
       }
 
       // Login the user

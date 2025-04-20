@@ -48,13 +48,41 @@ export default function AuthPage() {
         setIsProcessingMicrosoftAuth(true);
         const response = await handleRedirectResponse();
         if (response) {
-          // Successfully authenticated with Microsoft
-          // Here we would typically trigger a login/register API call with Microsoft credentials
-          console.log("Microsoft authentication successful", response);
+          console.log("Microsoft authentication successful, getting user info");
           
-          // TODO: Implement Microsoft login/registration with backend
-          // For now, we'll just redirect to home page for demo purposes
-          navigate("/");
+          try {
+            // Get account data from the token
+            const account = response.account;
+            const name = account.name || '';
+            const email = account.username || '';
+            const microsoftId = account.homeAccountId || '';
+            const accessToken = response.accessToken;
+            
+            // Call our backend to login or register with Microsoft
+            const res = await fetch('/api/auth/microsoft', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                microsoftId,
+                email,
+                displayName: name,
+                accessToken,
+                refreshToken: '', // We'd need a refresh token flow to get this
+              }),
+            });
+            
+            if (res.ok) {
+              // Reload the user state from the auth context
+              window.location.href = '/';
+            } else {
+              const errorData = await res.json();
+              console.error('Microsoft auth failed:', errorData);
+            }
+          } catch (err) {
+            console.error('Error during Microsoft authentication with backend:', err);
+          }
         }
       } catch (error) {
         console.error("Error handling Microsoft redirect:", error);
