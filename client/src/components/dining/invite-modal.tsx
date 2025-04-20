@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -6,13 +6,27 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { insertInvitationSchema } from "@shared/schema";
-import { X } from "lucide-react";
+import { 
+  X, 
+  Calendar, 
+  Clock, 
+  MapPin, 
+  MessageCircle, 
+  Store as RestaurantIcon, 
+  Utensils, 
+  Star, 
+  DollarSign,
+  Users,
+  Info,
+  Heart
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -21,6 +35,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import {
   Select,
@@ -32,7 +47,19 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User } from "@shared/schema";
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+} from "@/components/ui/card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { User, Restaurant } from "@shared/schema";
+import { calculateCompatibilityScore } from "@shared/constants";
 
 // Create a form schema based on the invitation schema
 const inviteFormSchema = z.object({
