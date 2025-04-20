@@ -90,11 +90,13 @@ export default function SiteHeader() {
             
             <DropdownMenu open={open} onOpenChange={setOpen}>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center space-x-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.profileImage} alt={user.name} />
-                    <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-                  </Avatar>
+                <Button variant="ghost" className="flex items-center space-x-2 relative group">
+                  <Link href="/profile">
+                    <Avatar className="h-8 w-8 group-hover:ring-2 group-hover:ring-primary/20 transition-all cursor-pointer">
+                      <AvatarImage src={user.profileImage} alt={user.name} />
+                      <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                    </Avatar>
+                  </Link>
                   <span className="font-medium">{user.name}</span>
                   <ChevronDown className="h-4 w-4 text-neutral-500" />
                 </Button>
