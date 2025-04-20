@@ -9,8 +9,12 @@ import UpcomingMeals from "@/components/dining/upcoming-meals";
 import ProfileCompletion from "@/components/profile/profile-completion";
 import InviteModal from "@/components/dining/invite-modal";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { CalendarPlus, Utensils } from "lucide-react";
 import { User } from "@shared/schema";
+
+import ScheduleMealModal from "@/components/dining/schedule-meal";
 
 // Toggle this to view the page without authentication
 const DEMO_MODE = true;
@@ -43,6 +47,7 @@ const mockUser: User = {
 export default function HomePage() {
   const { user: authUser } = useAuth();
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   
   // Use mock user in demo mode, otherwise use authenticated user
@@ -83,15 +88,26 @@ export default function HomePage() {
             {/* Welcome Section */}
             <Card>
               <CardContent className="p-6">
-                <div className="flex items-center space-x-4">
-                  <Avatar className="h-16 w-16 border-2 border-primary">
-                    <AvatarImage src={user.profileImage} alt={user.name} />
-                    <AvatarFallback className="text-lg">{getInitials(user.name)}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h1 className="font-bold text-2xl">Welcome back, {firstName}!</h1>
-                    <p className="text-neutral-600">Ready to find your next dining companion?</p>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <Avatar className="h-16 w-16 border-2 border-primary">
+                      <AvatarImage src={user.profileImage} alt={user.name} />
+                      <AvatarFallback className="text-lg">{getInitials(user.name)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h1 className="font-bold text-2xl">Welcome back, {firstName}!</h1>
+                      <p className="text-neutral-600">Ready to find your next dining companion?</p>
+                    </div>
                   </div>
+                  
+                  <Button 
+                    onClick={() => setShowScheduleModal(true)}
+                    size="lg"
+                    className="hidden md:flex items-center gap-2"
+                  >
+                    <CalendarPlus className="w-5 h-5" />
+                    <span>Schedule a Meal</span>
+                  </Button>
                 </div>
                 
                 <div className="mt-6 flex flex-wrap gap-4">
@@ -114,6 +130,17 @@ export default function HomePage() {
                     </span>
                     <span className="text-sm text-neutral-600">Upcoming Meals</span>
                   </div>
+                </div>
+                
+                {/* Mobile Schedule Button */}
+                <div className="mt-6 md:hidden">
+                  <Button 
+                    onClick={() => setShowScheduleModal(true)}
+                    className="w-full flex items-center justify-center gap-2"
+                  >
+                    <Utensils className="w-4 h-4" />
+                    <span>Schedule a Meal or Meet Now</span>
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -147,6 +174,12 @@ export default function HomePage() {
           onClose={() => setShowInviteModal(false)} 
         />
       )}
+      
+      {/* Schedule Meal Modal */}
+      <ScheduleMealModal
+        isOpen={showScheduleModal}
+        onClose={() => setShowScheduleModal(false)}
+      />
     </div>
   );
 }
