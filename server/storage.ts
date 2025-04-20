@@ -1,10 +1,13 @@
 import { users, type User, type InsertUser, restaurants, type Restaurant, type InsertRestaurant, invitations, type Invitation, type InsertInvitation } from "@shared/schema";
-import createMemoryStore from "memorystore";
-import session from "express-session";
+import * as session from "express-session";
+import connectPg from "connect-pg-simple";
+import { db } from "./db";
+import { eq, or, and, gte, sql } from "drizzle-orm";
+import { pool } from "./db";
 
-const MemoryStore = createMemoryStore(session);
+const PostgresSessionStore = connectPg(session);
 
-// Storage interface
+// Storage interface - Keep the same
 export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
@@ -28,193 +31,234 @@ export interface IStorage {
   getUpcomingMeals(userId: number): Promise<(Invitation & { restaurant: Restaurant, partner: User })[]>;
   
   // Session store
-  sessionStore: session.SessionStore;
+  sessionStore: session.Store;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private restaurants: Map<number, Restaurant>;
-  private invitations: Map<number, Invitation>;
-  sessionStore: session.SessionStore;
-  private userIdCounter: number;
-  private restaurantIdCounter: number;
-  private invitationIdCounter: number;
+// Database implementation of IStorage
+export class DatabaseStorage implements IStorage {
+  sessionStore: session.Store;
 
   constructor() {
-    this.users = new Map();
-    this.restaurants = new Map();
-    this.invitations = new Map();
-    this.userIdCounter = 1;
-    this.restaurantIdCounter = 1;
-    this.invitationIdCounter = 1;
-    this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000,
+    this.sessionStore = new PostgresSessionStore({ 
+      pool, 
+      createTableIfMissing: true 
     });
     
-    // Add some initial restaurants for testing
-    this.seedRestaurants();
+    // Seed some initial data
+    this.seedInitialData();
   }
 
-  private seedRestaurants() {
-    const sampleRestaurants: InsertRestaurant[] = [
-      {
-        name: "The Rustic Table",
-        cuisine: "Italian",
-        priceRange: "$$",
-        address: "123 Main St",
-        locationLat: "40.7128",
-        locationLng: "-74.0060",
-        rating: "4.7",
-        image: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80",
-      },
-      {
-        name: "Green Garden Café",
-        cuisine: "Vegan",
-        priceRange: "$$",
-        address: "456 Oak St",
-        locationLat: "40.7129",
-        locationLng: "-74.0061",
-        rating: "4.5",
-        image: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80",
-      },
-      {
-        name: "Sushi Sensation",
-        cuisine: "Japanese",
-        priceRange: "$$$",
-        address: "789 Pine St",
-        locationLat: "40.7130",
-        locationLng: "-74.0062",
-        rating: "4.8",
-        image: "https://images.unsplash.com/photo-1530018607912-eff2daa1bac4?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80",
-      }
-    ];
+  private async seedInitialData() {
+    // Check if there are any restaurants, if not, seed some
+    const existingRestaurants = await db.select().from(restaurants).limit(1);
+    
+    if (existingRestaurants.length === 0) {
+      const sampleRestaurants: InsertRestaurant[] = [
+        {
+          name: "The Rustic Table",
+          cuisine: "Italian",
+          priceRange: "$$",
+          address: "123 Main St",
+          locationLat: "40.7128",
+          locationLng: "-74.0060",
+          rating: "4.7",
+          image: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80",
+        },
+        {
+          name: "Green Garden Café",
+          cuisine: "Vegan",
+          priceRange: "$$",
+          address: "456 Oak St",
+          locationLat: "40.7129",
+          locationLng: "-74.0061",
+          rating: "4.5",
+          image: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80",
+        },
+        {
+          name: "Sushi Sensation",
+          cuisine: "Japanese",
+          priceRange: "$$$",
+          address: "789 Pine St",
+          locationLat: "40.7130",
+          locationLng: "-74.0062",
+          rating: "4.8",
+          image: "https://images.unsplash.com/photo-1530018607912-eff2daa1bac4?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80",
+        }
+      ];
 
-    sampleRestaurants.forEach(restaurant => {
-      this.createRestaurant(restaurant);
-    });
+      for (const restaurant of sampleRestaurants) {
+        await this.createRestaurant(restaurant);
+      }
+    }
   }
 
   // User methods
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username.toLowerCase() === username.toLowerCase(),
-    );
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(sql`LOWER(${users.username}) = LOWER(${username})`);
+    return user;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.email.toLowerCase() === email.toLowerCase(),
-    );
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(sql`LOWER(${users.email}) = LOWER(${email})`);
+    return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.userIdCounter++;
-    const user: User = { 
-      ...insertUser, 
-      id, 
-      isVerified: false, 
-      foodPreferences: [],
-      lastActive: new Date()
-    };
-    this.users.set(id, user);
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
     return user;
   }
 
   async updateUser(id: number, data: Partial<User>): Promise<User | undefined> {
-    const user = await this.getUser(id);
-    if (!user) return undefined;
-    
-    const updatedUser = { ...user, ...data };
-    this.users.set(id, updatedUser);
+    const [updatedUser] = await db
+      .update(users)
+      .set(data)
+      .where(eq(users.id, id))
+      .returning();
     return updatedUser;
   }
 
   async getNearbyUsers(lat: string, lng: string, radius: number): Promise<User[]> {
-    // In a real app, we would use geospatial queries
-    // For this mock, return all users except the one with the provided coordinates
-    return Array.from(this.users.values()).filter(user => 
-      user.locationLat !== lat && user.locationLng !== lng
-    );
+    // In a real implementation, we would use a geospatial query
+    // For simplicity, we'll just query all users except those with the exact same coordinates
+    return await db
+      .select()
+      .from(users)
+      .where(
+        and(
+          sql`${users.locationLat} IS NOT NULL`,
+          sql`${users.locationLng} IS NOT NULL`,
+          sql`${users.locationLat} <> ${lat} OR ${users.locationLng} <> ${lng}`
+        )
+      );
   }
 
   // Restaurant methods
   async getRestaurant(id: number): Promise<Restaurant | undefined> {
-    return this.restaurants.get(id);
+    const [restaurant] = await db
+      .select()
+      .from(restaurants)
+      .where(eq(restaurants.id, id));
+    return restaurant;
   }
 
   async createRestaurant(insertRestaurant: InsertRestaurant): Promise<Restaurant> {
-    const id = this.restaurantIdCounter++;
-    const restaurant: Restaurant = { ...insertRestaurant, id, activeUserCount: 0 };
-    this.restaurants.set(id, restaurant);
+    const [restaurant] = await db
+      .insert(restaurants)
+      .values(insertRestaurant)
+      .returning();
     return restaurant;
   }
 
   async getNearbyRestaurants(lat: string, lng: string, radius: number): Promise<Restaurant[]> {
-    // In a real app, we would use geospatial queries
-    // For this mock, return all restaurants
-    return Array.from(this.restaurants.values());
+    // Similarly, in a real implementation we would use geospatial queries
+    // For now, return all restaurants
+    return await db.select().from(restaurants);
   }
 
   async updateActiveUserCount(id: number, count: number): Promise<Restaurant | undefined> {
-    const restaurant = await this.getRestaurant(id);
-    if (!restaurant) return undefined;
-    
-    const updatedRestaurant = { ...restaurant, activeUserCount: count };
-    this.restaurants.set(id, updatedRestaurant);
+    const [updatedRestaurant] = await db
+      .update(restaurants)
+      .set({ activeUserCount: count })
+      .where(eq(restaurants.id, id))
+      .returning();
     return updatedRestaurant;
   }
 
   // Invitation methods
   async getInvitation(id: number): Promise<Invitation | undefined> {
-    return this.invitations.get(id);
+    const [invitation] = await db
+      .select()
+      .from(invitations)
+      .where(eq(invitations.id, id));
+    return invitation;
   }
 
   async createInvitation(insertInvitation: InsertInvitation): Promise<Invitation> {
-    const id = this.invitationIdCounter++;
-    const invitation: Invitation = { ...insertInvitation, id, createdAt: new Date() };
-    this.invitations.set(id, invitation);
+    const [invitation] = await db
+      .insert(invitations)
+      .values(insertInvitation)
+      .returning();
     return invitation;
   }
 
   async updateInvitationStatus(id: number, status: string): Promise<Invitation | undefined> {
-    const invitation = await this.getInvitation(id);
-    if (!invitation) return undefined;
-    
-    const updatedInvitation = { ...invitation, status };
-    this.invitations.set(id, updatedInvitation);
+    const [updatedInvitation] = await db
+      .update(invitations)
+      .set({ status })
+      .where(eq(invitations.id, id))
+      .returning();
     return updatedInvitation;
   }
 
   async getInvitationsForUser(userId: number): Promise<Invitation[]> {
-    return Array.from(this.invitations.values()).filter(
-      invitation => invitation.receiverId === userId || invitation.senderId === userId
-    );
+    return await db
+      .select()
+      .from(invitations)
+      .where(
+        or(
+          eq(invitations.senderId, userId),
+          eq(invitations.receiverId, userId)
+        )
+      );
   }
 
   async getUpcomingMeals(userId: number): Promise<(Invitation & { restaurant: Restaurant, partner: User })[]> {
-    const allInvitations = Array.from(this.invitations.values()).filter(
-      invitation => (invitation.receiverId === userId || invitation.senderId === userId) && 
-      invitation.status === 'accepted' &&
-      new Date(invitation.date) >= new Date()
-    );
+    // This is more complex and requires multiple queries
+    const invitationsList = await db
+      .select()
+      .from(invitations)
+      .where(
+        and(
+          or(
+            eq(invitations.senderId, userId),
+            eq(invitations.receiverId, userId)
+          ),
+          eq(invitations.status, "accepted"),
+          gte(invitations.date, new Date())
+        )
+      )
+      .orderBy(invitations.date);
     
-    // For each invitation, get the restaurant and partner info
-    return allInvitations.map(invitation => {
-      const restaurant = this.restaurants.get(invitation.restaurantId)!;
-      const partnerId = invitation.senderId === userId ? invitation.receiverId : invitation.senderId;
-      const partner = this.users.get(partnerId)!;
+    // Now we need to get restaurant and partner data for each invitation
+    const result: (Invitation & { restaurant: Restaurant, partner: User })[] = [];
+    
+    for (const invitation of invitationsList) {
+      const [restaurant] = await db
+        .select()
+        .from(restaurants)
+        .where(eq(restaurants.id, invitation.restaurantId));
       
-      return {
-        ...invitation,
-        restaurant,
-        partner
-      };
-    }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      const partnerId = invitation.senderId === userId ? invitation.receiverId : invitation.senderId;
+      const [partner] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, partnerId));
+      
+      if (restaurant && partner) {
+        result.push({
+          ...invitation,
+          restaurant,
+          partner
+        });
+      }
+    }
+    
+    return result;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

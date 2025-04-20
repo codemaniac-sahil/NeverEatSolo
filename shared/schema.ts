@@ -1,4 +1,5 @@
 import { pgTable, text, serial, integer, boolean, timestamp, json } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -38,15 +39,31 @@ export const restaurants = pgTable("restaurants", {
 // Meal invitations model
 export const invitations = pgTable("invitations", {
   id: serial("id").primaryKey(),
-  senderId: integer("sender_id").notNull(),
-  receiverId: integer("receiver_id").notNull(),
-  restaurantId: integer("restaurant_id").notNull(),
+  senderId: integer("sender_id").notNull().references(() => users.id),
+  receiverId: integer("receiver_id").notNull().references(() => users.id),
+  restaurantId: integer("restaurant_id").notNull().references(() => restaurants.id),
   date: timestamp("date").notNull(),
   time: text("time").notNull(),
   message: text("message"),
   status: text("status").default("pending").notNull(), // pending, accepted, declined
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+// Define relations
+export const usersRelations = relations(users, ({ many }) => ({
+  sentInvitations: many(invitations, { relationName: "sentInvitations" }),
+  receivedInvitations: many(invitations, { relationName: "receivedInvitations" }),
+}));
+
+export const restaurantsRelations = relations(restaurants, ({ many }) => ({
+  invitations: many(invitations),
+}));
+
+export const invitationsRelations = relations(invitations, ({ one }) => ({
+  sender: one(users, { relationName: "sentInvitations", fields: [invitations.senderId], references: [users.id] }),
+  receiver: one(users, { relationName: "receivedInvitations", fields: [invitations.receiverId], references: [users.id] }),
+  restaurant: one(restaurants, { fields: [invitations.restaurantId], references: [restaurants.id] }),
+}));
 
 // Define Zod schemas for validation
 export const insertUserSchema = createInsertSchema(users).omit({
