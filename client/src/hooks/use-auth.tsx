@@ -68,6 +68,8 @@ function InternalAuthProvider({ children }: { children: ReactNode }) {
         title: "Account created",
         description: "Your account has been successfully created!",
       });
+      // Redirect to onboarding page after successful registration
+      window.location.href = '/onboarding';
     },
     onError: (error: Error) => {
       toast({
