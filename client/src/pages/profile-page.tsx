@@ -13,6 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -40,7 +42,14 @@ import {
   Mail,
   FileEdit,
   Save,
+  UtensilsCrossed
 } from "lucide-react";
+import { 
+  DIETARY_RESTRICTIONS, 
+  CUISINE_PREFERENCES, 
+  DINING_STYLES, 
+  FOOD_PREFERENCES 
+} from "@shared/constants";
 
 // Profile update schema
 const profileFormSchema = z.object({
@@ -356,14 +365,248 @@ export default function ProfilePage() {
                   
                   {/* Food Preferences Tab */}
                   <TabsContent value="preferences">
-                    <div className="p-4 text-center">
-                      <User className="h-12 w-12 mx-auto text-neutral-400" />
-                      <h3 className="mt-4 text-lg font-medium">Food Preferences</h3>
-                      <p className="mt-2 text-neutral-600">
-                        Coming soon! You will be able to select your food preferences, 
-                        dietary restrictions, and favorite cuisines here.
-                      </p>
-                    </div>
+                    <Form {...form}>
+                      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-4">
+                        <div className="flex items-center justify-center mb-4">
+                          <div className="bg-primary/10 p-3 rounded-full">
+                            <UtensilsCrossed className="h-8 w-8 text-primary" />
+                          </div>
+                        </div>
+                        
+                        <h3 className="text-lg font-medium text-center mb-6">
+                          Dietary Preferences & Restrictions
+                        </h3>
+                        
+                        <div className="space-y-8">
+                          {/* Dietary Restrictions Section */}
+                          <FormField
+                            control={form.control}
+                            name="dietaryRestrictions"
+                            render={() => (
+                              <FormItem>
+                                <div className="mb-4">
+                                  <FormLabel className="text-base">Dietary Restrictions</FormLabel>
+                                  <FormDescription>
+                                    Select any dietary restrictions that you follow.
+                                  </FormDescription>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                  {DIETARY_RESTRICTIONS.map((item) => (
+                                    <FormField
+                                      key={item}
+                                      control={form.control}
+                                      name="dietaryRestrictions"
+                                      render={({ field }) => {
+                                        return (
+                                          <FormItem
+                                            key={item}
+                                            className="flex flex-row items-start space-x-3 space-y-0 bg-neutral-50 border rounded-md p-3 hover:bg-neutral-100"
+                                          >
+                                            <FormControl>
+                                              <Checkbox
+                                                checked={field.value?.includes(item)}
+                                                onCheckedChange={(checked) => {
+                                                  return checked
+                                                    ? field.onChange([...field.value || [], item])
+                                                    : field.onChange(
+                                                        field.value?.filter(
+                                                          (value) => value !== item
+                                                        )
+                                                      );
+                                                }}
+                                              />
+                                            </FormControl>
+                                            <FormLabel className="font-normal text-sm cursor-pointer">
+                                              {item}
+                                            </FormLabel>
+                                          </FormItem>
+                                        );
+                                      }}
+                                    />
+                                  ))}
+                                </div>
+                              </FormItem>
+                            )}
+                          />
+                          
+                          {/* Cuisine Preferences Section */}
+                          <FormField
+                            control={form.control}
+                            name="cuisinePreferences"
+                            render={() => (
+                              <FormItem>
+                                <div className="mb-4">
+                                  <FormLabel className="text-base">Favorite Cuisines</FormLabel>
+                                  <FormDescription>
+                                    Select the types of cuisines you most enjoy.
+                                  </FormDescription>
+                                </div>
+                                
+                                <div className="flex flex-wrap gap-2">
+                                  {CUISINE_PREFERENCES.map((item) => (
+                                    <FormField
+                                      key={item}
+                                      control={form.control}
+                                      name="cuisinePreferences"
+                                      render={({ field }) => {
+                                        const selected = field.value?.includes(item);
+                                        return (
+                                          <FormItem key={item} className="flex flex-row space-x-1 space-y-0">
+                                            <FormControl>
+                                              <div
+                                                className={`cursor-pointer px-3 py-1 rounded-full text-sm transition-colors ${
+                                                  selected
+                                                    ? "bg-primary text-white"
+                                                    : "bg-neutral-100 hover:bg-neutral-200 text-neutral-700"
+                                                }`}
+                                                onClick={() => {
+                                                  return selected
+                                                    ? field.onChange(
+                                                        field.value?.filter(
+                                                          (value) => value !== item
+                                                        )
+                                                      )
+                                                    : field.onChange([...field.value || [], item]);
+                                                }}
+                                              >
+                                                {item}
+                                              </div>
+                                            </FormControl>
+                                          </FormItem>
+                                        );
+                                      }}
+                                    />
+                                  ))}
+                                </div>
+                              </FormItem>
+                            )}
+                          />
+                          
+                          {/* Dining Styles Section */}
+                          <FormField
+                            control={form.control}
+                            name="diningStyles"
+                            render={() => (
+                              <FormItem>
+                                <div className="mb-4">
+                                  <FormLabel className="text-base">Preferred Dining Styles</FormLabel>
+                                  <FormDescription>
+                                    What types of dining experiences do you prefer?
+                                  </FormDescription>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                  {DINING_STYLES.map((item) => (
+                                    <FormField
+                                      key={item}
+                                      control={form.control}
+                                      name="diningStyles"
+                                      render={({ field }) => {
+                                        return (
+                                          <FormItem
+                                            key={item}
+                                            className="flex flex-row items-start space-x-3 space-y-0 bg-neutral-50 border rounded-md p-3 hover:bg-neutral-100"
+                                          >
+                                            <FormControl>
+                                              <Checkbox
+                                                checked={field.value?.includes(item)}
+                                                onCheckedChange={(checked) => {
+                                                  return checked
+                                                    ? field.onChange([...field.value || [], item])
+                                                    : field.onChange(
+                                                        field.value?.filter(
+                                                          (value) => value !== item
+                                                        )
+                                                      );
+                                                }}
+                                              />
+                                            </FormControl>
+                                            <FormLabel className="font-normal text-sm cursor-pointer">
+                                              {item}
+                                            </FormLabel>
+                                          </FormItem>
+                                        );
+                                      }}
+                                    />
+                                  ))}
+                                </div>
+                              </FormItem>
+                            )}
+                          />
+                          
+                          {/* Food Preferences Section */}
+                          <FormField
+                            control={form.control}
+                            name="foodPreferences"
+                            render={() => (
+                              <FormItem>
+                                <div className="mb-4">
+                                  <FormLabel className="text-base">Eating Habits & Preferences</FormLabel>
+                                  <FormDescription>
+                                    These preferences help us match you with compatible dining partners.
+                                  </FormDescription>
+                                </div>
+                                
+                                <div className="flex flex-wrap gap-2">
+                                  {FOOD_PREFERENCES.map((item) => (
+                                    <FormField
+                                      key={item}
+                                      control={form.control}
+                                      name="foodPreferences"
+                                      render={({ field }) => {
+                                        const selected = field.value?.includes(item);
+                                        return (
+                                          <FormItem key={item} className="flex flex-row space-x-1 space-y-0">
+                                            <FormControl>
+                                              <div
+                                                className={`cursor-pointer px-3 py-1 rounded-full text-sm transition-colors ${
+                                                  selected
+                                                    ? "bg-primary text-white"
+                                                    : "bg-neutral-100 hover:bg-neutral-200 text-neutral-700"
+                                                }`}
+                                                onClick={() => {
+                                                  return selected
+                                                    ? field.onChange(
+                                                        field.value?.filter(
+                                                          (value) => value !== item
+                                                        )
+                                                      )
+                                                    : field.onChange([...field.value || [], item]);
+                                                }}
+                                              >
+                                                {item}
+                                              </div>
+                                            </FormControl>
+                                          </FormItem>
+                                        );
+                                      }}
+                                    />
+                                  ))}
+                                </div>
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        
+                        <div className="flex justify-end pt-4">
+                          <Button 
+                            type="submit" 
+                            className="bg-primary hover:bg-primary/90"
+                            disabled={updateProfile.isPending}
+                          >
+                            {updateProfile.isPending ? (
+                              <>Saving...</>
+                            ) : (
+                              <>
+                                <Save className="mr-2 h-4 w-4" />
+                                Save Preferences
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </form>
+                    </Form>
                   </TabsContent>
                   
                   {/* Verification Tab */}

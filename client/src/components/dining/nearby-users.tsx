@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
-import { CheckCircle, Filter } from "lucide-react";
+import { CheckCircle, Filter, Utensils, Heart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { User } from "@shared/schema";
+import { calculateCompatibilityScore } from "@shared/constants";
 
 interface NearbyUsersProps {
   onInvite: (user: User) => void;
@@ -38,20 +39,33 @@ export default function NearbyUsers({ onInvite }: NearbyUsersProps) {
   }, []);
 
   // Fetch nearby users
-  const { data: nearbyUsers = [], isLoading } = useQuery({
+  const { data: nearbyUsers = [], isLoading } = useQuery<User[]>({
     queryKey: ["/api/users/nearby", coordinates?.lat, coordinates?.lng],
     enabled: !!coordinates && !!user,
   });
 
-  // Mock distances for demonstration
+  // Helper distances for demonstration
   const distances = ["0.8 miles away", "1.2 miles away", "0.5 miles away", "1.5 miles away"];
-  const matchPercentages = ["95% Match", "87% Match", "92% Match", "82% Match"];
-  const foodPreferences = [
-    ["Thai Food", "Vegan Options", "Fine Dining"],
-    ["Italian", "Wine Tasting", "Seafood"],
-    ["Mexican", "Casual Dining", "Outdoor Seating"],
-    ["Japanese", "Sushi", "Ramen"]
-  ];
+  
+  // Calculate compatibility score for each user
+  const getCompatibilityScore = (otherUser: User) => {
+    if (!user) return 0;
+    
+    return calculateCompatibilityScore(
+      {
+        dietaryRestrictions: user.dietaryRestrictions || [],
+        cuisinePreferences: user.cuisinePreferences || [],
+        diningStyles: user.diningStyles || [],
+        foodPreferences: user.foodPreferences || []
+      },
+      {
+        dietaryRestrictions: otherUser.dietaryRestrictions || [],
+        cuisinePreferences: otherUser.cuisinePreferences || [],
+        diningStyles: otherUser.diningStyles || [],
+        foodPreferences: otherUser.foodPreferences || []
+      }
+    );
+  };
 
   return (
     <Card>
@@ -114,22 +128,42 @@ export default function NearbyUsers({ onInvite }: NearbyUsersProps) {
                         <h3 className="font-semibold text-lg flex items-center">
                           {nearbyUser.name}, {nearbyUser.age || 30}
                           {nearbyUser.isVerified && (
-                            <CheckCircle className="text-green-500 ml-1 h-4 w-4" title="Verified User" />
+                            <CheckCircle className="text-green-500 ml-1 h-4 w-4" aria-label="Verified User" />
                           )}
                         </h3>
                         <p className="text-neutral-600 text-sm">{nearbyUser.occupation || "Food Enthusiast"}</p>
                       </div>
-                      <Badge variant="outline" className="bg-amber-100 border-amber-200 text-amber-800">
-                        {matchPercentages[i % matchPercentages.length]}
-                      </Badge>
+                      
+                      {/* Display real compatibility score based on food preferences */}
+                      {user && (
+                        <Badge 
+                          variant="outline" 
+                          className={`flex items-center gap-1 ${
+                            getCompatibilityScore(nearbyUser) >= 75 
+                              ? "bg-green-100 border-green-200 text-green-800"
+                              : getCompatibilityScore(nearbyUser) >= 50
+                                ? "bg-amber-100 border-amber-200 text-amber-800"
+                                : "bg-gray-100 border-gray-200 text-gray-800"
+                          }`}
+                        >
+                          <Heart className="h-3 w-3 mr-0.5" />
+                          {getCompatibilityScore(nearbyUser)}% Match
+                        </Badge>
+                      )}
                     </div>
                     
                     <div className="mt-3 flex flex-wrap gap-2">
-                      {foodPreferences[i % foodPreferences.length].map((pref, j) => (
-                        <Badge key={j} variant="secondary" className="text-xs">
-                          {pref}
-                        </Badge>
-                      ))}
+                      {/* Display actual cuisine preferences */}
+                      {nearbyUser.cuisinePreferences && nearbyUser.cuisinePreferences.length > 0 ? (
+                        nearbyUser.cuisinePreferences.slice(0, 3).map((pref, j) => (
+                          <Badge key={j} variant="secondary" className="text-xs flex items-center gap-1">
+                            <Utensils className="h-3 w-3" />
+                            {pref}
+                          </Badge>
+                        ))
+                      ) : (
+                        <Badge variant="secondary" className="text-xs">No preferences set</Badge>
+                      )}
                     </div>
                     
                     <p className="mt-3 text-sm text-neutral-600 line-clamp-2">
