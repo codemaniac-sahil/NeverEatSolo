@@ -126,14 +126,15 @@ export default function UpcomingMeals() {
   const { user } = useAuth();
   const [showAll, setShowAll] = useState(false);
 
-  // Type for upcoming meals
-  type UpcomingMeal = Invitation & { restaurant: Restaurant; partner: User };
-
-  // Fetch upcoming meals
-  const { data: upcomingMeals = [], isLoading } = useQuery<UpcomingMeal[]>({
+  // Fetch upcoming meals from API when not in demo mode
+  const { data: apiUpcomingMeals = [], isLoading: isApiLoading } = useQuery<UpcomingMeal[]>({
     queryKey: ["/api/meals/upcoming"],
-    enabled: !!user
+    enabled: !DEMO_MODE && !!user
   });
+  
+  // Use mock data in demo mode, otherwise use data from API
+  const upcomingMeals = DEMO_MODE ? mockUpcomingMeals : apiUpcomingMeals;
+  const isLoading = DEMO_MODE ? false : isApiLoading;
 
   const displayMeals = showAll ? upcomingMeals : upcomingMeals.slice(0, 2);
 

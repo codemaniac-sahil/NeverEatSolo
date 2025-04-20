@@ -12,6 +12,9 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 
+// Toggle this to use demo mode
+const DEMO_MODE = true;
+
 interface CalendarSyncProps {
   invitation: Invitation & { restaurant: Restaurant; partner: User };
 }
@@ -44,6 +47,21 @@ export default function CalendarSync({ invitation }: CalendarSyncProps) {
 
   // Handle sync with Microsoft calendar
   const handleSyncWithCalendar = async () => {
+    // In demo mode, just show a success message without making API calls
+    if (DEMO_MODE) {
+      setSyncing(true);
+      // Simulate API delay
+      setTimeout(() => {
+        toast({
+          title: "Demo Mode: Calendar synced",
+          description: "In a real environment, this would sync with your Microsoft calendar.",
+          variant: "default"
+        });
+        setSyncing(false);
+      }, 1000);
+      return;
+    }
+    
     if (!canSyncWithCalendar) {
       toast({
         title: "Microsoft account not connected",
@@ -111,6 +129,21 @@ export default function CalendarSync({ invitation }: CalendarSyncProps) {
 
   // Handle removing from calendar
   const handleRemoveFromCalendar = async () => {
+    // In demo mode, just show a success message without making API calls
+    if (DEMO_MODE) {
+      setSyncing(true);
+      // Simulate API delay
+      setTimeout(() => {
+        toast({
+          title: "Demo Mode: Removed from calendar",
+          description: "In a real environment, this would remove the event from your Microsoft calendar.",
+          variant: "default"
+        });
+        setSyncing(false);
+      }, 1000);
+      return;
+    }
+    
     if (!invitation.outlookEventId) return;
 
     setSyncing(true);
@@ -144,8 +177,9 @@ export default function CalendarSync({ invitation }: CalendarSyncProps) {
     }
   };
 
-  // If user doesn't have Microsoft integration or has disabled calendar sync, don't show anything
-  if (!user?.microsoftId || user?.useMicrosoftCalendar === false) {
+  // In demo mode, always show calendar sync UI
+  // Otherwise, check if user has Microsoft integration and calendar sync enabled
+  if (!DEMO_MODE && (!user?.microsoftId || user?.useMicrosoftCalendar === false)) {
     return null;
   }
 
