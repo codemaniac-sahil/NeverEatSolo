@@ -1,12 +1,41 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
-import { CheckCircle, Filter, Utensils, Heart } from "lucide-react";
+import { 
+  CheckCircle, Filter, Utensils, Heart, X, MapPin, 
+  Search, Coffee, Clock, ChefHat, Star, Users, Leaf 
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { User } from "@shared/schema";
 import { calculateCompatibilityScore } from "@shared/constants";
+import { Input } from "@/components/ui/input";
+import { 
+  Sheet, 
+  SheetClose, 
+  SheetContent,
+  SheetHeader,
+  SheetTitle, 
+  SheetTrigger 
+} from "@/components/ui/sheet";
+import {
+  Slider
+} from "@/components/ui/slider";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { CUISINE_PREFERENCES, DINING_STYLES } from "@shared/constants";
 
 // Toggle this to use mock data
 const DEMO_MODE = true;
@@ -22,6 +51,8 @@ const mockNearbyUsers: User[] = [
     bio: "Passionate about Italian cuisine and fine dining experiences. I love exploring new restaurants on weekends.",
     occupation: "Food Blogger",
     profileImage: "",
+    gender: "female",
+    dateOfBirth: "1994-05-15",
     age: 29,
     phone: "",
     isVerified: true,
@@ -45,6 +76,8 @@ const mockNearbyUsers: User[] = [
     bio: "Spicy food enthusiast always looking for authentic international cuisines. Love trying new dishes!",
     occupation: "Chef",
     profileImage: "",
+    gender: "male",
+    dateOfBirth: "1989-08-22",
     age: 34,
     phone: "",
     isVerified: true,
@@ -68,6 +101,8 @@ const mockNearbyUsers: User[] = [
     bio: "Health-conscious foodie looking for nutritious and delicious meals. I enjoy conversations about wellness and food.",
     occupation: "Nutritionist",
     profileImage: "",
+    gender: "female",
+    dateOfBirth: "1992-11-03",
     age: 31,
     phone: "",
     isVerified: true,
@@ -91,6 +126,8 @@ const mockNearbyUsers: User[] = [
     bio: "Food enthusiast who loves exploring different cuisines. I'm always up for trying new restaurants and dishes!",
     occupation: "Food Photographer",
     profileImage: "",
+    gender: "male",
+    dateOfBirth: "1991-04-17",
     age: 32,
     phone: "",
     isVerified: true,
@@ -114,6 +151,17 @@ interface NearbyUsersProps {
 export default function NearbyUsers({ onInvite }: NearbyUsersProps) {
   const { user } = useAuth();
   const [coordinates, setCoordinates] = useState<{ lat: string, lng: string } | null>(null);
+  
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [radius, setRadius] = useState(5);
+  const [minAge, setMinAge] = useState(18);
+  const [maxAge, setMaxAge] = useState(70);
+  const [selectedCuisines, setSelectedCuisines] = useState<string[]>([]);
+  const [selectedDiningStyles, setSelectedDiningStyles] = useState<string[]>([]);
+  const [showOnlineOnly, setShowOnlineOnly] = useState(false);
+  const [minCompatibility, setMinCompatibility] = useState(0);
+  const [sortBy, setSortBy] = useState<"compatibility" | "distance" | "activity">("compatibility");
   
   // Get current coordinates
   useEffect(() => {
@@ -139,12 +187,12 @@ export default function NearbyUsers({ onInvite }: NearbyUsersProps) {
 
   // Fetch nearby users from API or use mock data in demo mode
   const { data: apiNearbyUsers = [], isLoading: isApiLoading } = useQuery<User[]>({
-    queryKey: ["/api/users/nearby", coordinates?.lat, coordinates?.lng],
+    queryKey: ["/api/users/nearby", coordinates?.lat, coordinates?.lng, radius],
     enabled: !DEMO_MODE && !!coordinates && !!user,
   });
   
   // Use mock data in demo mode, otherwise use data from API
-  const nearbyUsers = DEMO_MODE ? mockNearbyUsers : apiNearbyUsers;
+  const allNearbyUsers = DEMO_MODE ? mockNearbyUsers : apiNearbyUsers;
   const isLoading = DEMO_MODE ? false : isApiLoading;
 
   // Helper distances for demonstration
@@ -169,16 +217,317 @@ export default function NearbyUsers({ onInvite }: NearbyUsersProps) {
       }
     );
   };
+  
+  // Apply filters to users
+  const filteredUsers = allNearbyUsers.filter(nearbyUser => {
+    // Apply search filter
+    if (searchTerm && !nearbyUser.name.toLowerCase().includes(searchTerm.toLowerCase()) && 
+        !nearbyUser.occupation?.toLowerCase().includes(searchTerm.toLowerCase())) {
+      return false;
+    }
+    
+    // Apply age filter
+    if (nearbyUser.age && (nearbyUser.age < minAge || nearbyUser.age > maxAge)) {
+      return false;
+    }
+    
+    // Apply cuisine preference filter
+    if (selectedCuisines.length > 0 && 
+        !selectedCuisines.some(cuisine => 
+          nearbyUser.cuisinePreferences?.includes(cuisine)
+        )) {
+      return false;
+    }
+    
+    // Apply dining style filter
+    if (selectedDiningStyles.length > 0 && 
+        !selectedDiningStyles.some(style => 
+          nearbyUser.diningStyles?.includes(style)
+        )) {
+      return false;
+    }
+    
+    // Apply compatibility filter
+    if (minCompatibility > 0 && getCompatibilityScore(nearbyUser) < minCompatibility) {
+      return false;
+    }
+    
+    // We'll assume all users are online in demo mode
+    if (showOnlineOnly && DEMO_MODE) {
+      return true;
+    }
+    
+    return true;
+  });
+  
+  // Sort users based on selected sort criteria
+  const sortedUsers = [...filteredUsers].sort((a, b) => {
+    if (sortBy === "compatibility") {
+      return getCompatibilityScore(b) - getCompatibilityScore(a);
+    } else if (sortBy === "distance") {
+      // In demo mode, just random sort for distance
+      return Math.random() - 0.5;
+    } else {
+      // Sort by activity (lastActive)
+      return new Date(b.lastActive).getTime() - new Date(a.lastActive).getTime();
+    }
+  });
+  
+  // Final list of users to display
+  const nearbyUsers = sortedUsers;
+  
+  // Reset filters
+  const resetFilters = () => {
+    setSearchTerm("");
+    setRadius(5);
+    setMinAge(18);
+    setMaxAge(70);
+    setSelectedCuisines([]);
+    setSelectedDiningStyles([]);
+    setShowOnlineOnly(false);
+    setMinCompatibility(0);
+    setSortBy("compatibility");
+  };
 
   return (
     <Card>
       <CardContent className="p-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="font-bold text-xl">Nearby Dining Companions</h2>
-          <Button variant="outline" size="sm" className="text-neutral-600 flex items-center gap-1">
-            <span>Filter</span>
-            <Filter className="h-4 w-4" />
-          </Button>
+          
+          <div className="flex items-center gap-2">
+            <div className="relative w-56 hidden md:block">
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400" />
+              <Input 
+                placeholder="Search by name or occupation..." 
+                className="pl-8 h-9 text-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            
+            <Select
+              value={sortBy}
+              onValueChange={(value) => setSortBy(value as "compatibility" | "distance" | "activity")}
+            >
+              <SelectTrigger className="h-9 w-44 text-sm">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="compatibility">Best Match</SelectItem>
+                <SelectItem value="distance">Closest First</SelectItem>
+                <SelectItem value="activity">Recently Active</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="sm" className="text-neutral-600 flex items-center gap-1">
+                  <span>Filter</span>
+                  <Filter className="h-4 w-4" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent className="w-full md:max-w-sm overflow-y-auto">
+                <SheetHeader>
+                  <SheetTitle>Filter Dining Companions</SheetTitle>
+                </SheetHeader>
+                
+                <div className="mt-6 space-y-6">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <label className="text-sm font-medium">Search</label>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-8 px-2 text-neutral-500"
+                        onClick={() => setSearchTerm("")}
+                      >
+                        Clear
+                      </Button>
+                    </div>
+                    <div className="relative">
+                      <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                      <Input 
+                        placeholder="Name or occupation..." 
+                        className="pl-8"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <label className="text-sm font-medium flex items-center gap-1">
+                        <MapPin className="h-4 w-4" />
+                        Search Radius
+                      </label>
+                      <span className="text-sm text-neutral-600">{radius} miles</span>
+                    </div>
+                    <Slider
+                      className="py-2"
+                      min={1}
+                      max={50}
+                      step={1}
+                      value={[radius]}
+                      onValueChange={(value) => setRadius(value[0])}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <label className="text-sm font-medium flex items-center gap-1">
+                        <Users className="h-4 w-4" />
+                        Age Range
+                      </label>
+                      <span className="text-sm text-neutral-600">{minAge} - {maxAge}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input 
+                        type="number" 
+                        min={18} 
+                        max={maxAge}
+                        value={minAge}
+                        onChange={(e) => setMinAge(parseInt(e.target.value))}
+                        className="w-16 text-center"
+                      />
+                      <div className="h-px bg-neutral-200 flex-grow"></div>
+                      <Input 
+                        type="number" 
+                        min={minAge} 
+                        max={100}
+                        value={maxAge}
+                        onChange={(e) => setMaxAge(parseInt(e.target.value))}
+                        className="w-16 text-center"
+                      />
+                    </div>
+                  </div>
+                  
+                  <Accordion type="multiple" className="w-full">
+                    <AccordionItem value="cuisines">
+                      <AccordionTrigger className="text-sm font-medium py-2">
+                        <div className="flex items-center gap-1">
+                          <ChefHat className="h-4 w-4" />
+                          <span>Cuisine Preferences</span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="grid grid-cols-2 gap-1 pt-2">
+                          {CUISINE_PREFERENCES.map(cuisine => (
+                            <div
+                              key={cuisine} 
+                              className={`px-2 py-1 rounded-md text-sm cursor-pointer border flex items-center justify-between ${
+                                selectedCuisines.includes(cuisine) 
+                                  ? 'border-primary bg-primary/5 text-primary' 
+                                  : 'border-neutral-200 hover:border-neutral-300'
+                              }`}
+                              onClick={() => {
+                                setSelectedCuisines(
+                                  selectedCuisines.includes(cuisine)
+                                    ? selectedCuisines.filter(c => c !== cuisine)
+                                    : [...selectedCuisines, cuisine]
+                                );
+                              }}
+                            >
+                              <span>{cuisine}</span>
+                              {selectedCuisines.includes(cuisine) && (
+                                <CheckCircle className="h-3 w-3" />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                    
+                    <AccordionItem value="dining-styles">
+                      <AccordionTrigger className="text-sm font-medium py-2">
+                        <div className="flex items-center gap-1">
+                          <Utensils className="h-4 w-4" />
+                          <span>Dining Styles</span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="grid grid-cols-2 gap-1 pt-2">
+                          {DINING_STYLES.map(style => (
+                            <div
+                              key={style} 
+                              className={`px-2 py-1 rounded-md text-sm cursor-pointer border flex items-center justify-between ${
+                                selectedDiningStyles.includes(style) 
+                                  ? 'border-primary bg-primary/5 text-primary' 
+                                  : 'border-neutral-200 hover:border-neutral-300'
+                              }`}
+                              onClick={() => {
+                                setSelectedDiningStyles(
+                                  selectedDiningStyles.includes(style)
+                                    ? selectedDiningStyles.filter(s => s !== style)
+                                    : [...selectedDiningStyles, style]
+                                );
+                              }}
+                            >
+                              <span>{style}</span>
+                              {selectedDiningStyles.includes(style) && (
+                                <CheckCircle className="h-3 w-3" />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                    
+                    <AccordionItem value="compatibility">
+                      <AccordionTrigger className="text-sm font-medium py-2">
+                        <div className="flex items-center gap-1">
+                          <Heart className="h-4 w-4" />
+                          <span>Compatibility</span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="space-y-2 pt-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm">Minimum Match</span>
+                            <span className="text-sm text-neutral-600">{minCompatibility}%</span>
+                          </div>
+                          <Slider
+                            className="py-2"
+                            min={0}
+                            max={100}
+                            step={5}
+                            value={[minCompatibility]}
+                            onValueChange={(value) => setMinCompatibility(value[0])}
+                          />
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                  
+                  <div className="flex items-center gap-2 pt-2">
+                    <div 
+                      className={`flex-1 py-2 rounded-md border text-center cursor-pointer ${
+                        showOnlineOnly 
+                          ? 'border-primary bg-primary/5 text-primary' 
+                          : 'border-neutral-200 hover:border-neutral-300'
+                      }`}
+                      onClick={() => setShowOnlineOnly(!showOnlineOnly)}
+                    >
+                      <div className="flex items-center justify-center gap-1">
+                        <div className={`w-2 h-2 rounded-full ${showOnlineOnly ? 'bg-green-500' : 'bg-neutral-300'}`}></div>
+                        <span className="text-sm">Online Only</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-between pt-4 border-t">
+                    <Button variant="outline" onClick={resetFilters}>
+                      Reset All Filters
+                    </Button>
+                    <SheetClose asChild>
+                      <Button>Apply Filters</Button>
+                    </SheetClose>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
         
         {isLoading ? (
