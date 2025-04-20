@@ -144,6 +144,11 @@ export default function AuthPage() {
   function onRegisterSubmit(data: RegisterFormValues) {
     // Remove confirmPassword and agreeToTerms fields
     const { confirmPassword, agreeToTerms, ...userData } = data;
+    
+    // Log registration data to help diagnose issues
+    console.log("Registration data:", userData);
+    
+    // Submit registration data
     registerMutation.mutate(userData);
   }
 
