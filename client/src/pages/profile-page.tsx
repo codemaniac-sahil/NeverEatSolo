@@ -612,6 +612,13 @@ export default function ProfilePage() {
                     </Form>
                   </TabsContent>
                   
+                  {/* Dining History Tab */}
+                  <TabsContent value="history">
+                    <div className="p-6">
+                      <DiningHistory userId={user.id} />
+                    </div>
+                  </TabsContent>
+                  
                   {/* Verification Tab */}
                   <TabsContent value="verification">
                     <div className="p-6 space-y-6">

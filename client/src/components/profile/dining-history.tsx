@@ -21,6 +21,15 @@ import {
 import { format } from 'date-fns';
 import { Invitation, User as UserType, Restaurant } from '@shared/schema';
 
+type PartialUser = {
+  id?: number;
+  name?: string;
+  occupation?: string;
+  profileImage?: string;
+  foodPreferences?: string[];
+  dietaryRestrictions?: string[];
+};
+
 // DEMO FLAG - Toggle for demo mode
 const DEMO_MODE = true;
 
@@ -42,6 +51,7 @@ const MOCK_DINING_HISTORY = [
       locationLat: "40.7128",
       locationLng: "-74.0060",
       imageUrl: "",
+      image: null,
       rating: 4.5,
       activeUserCount: 2,
     },
@@ -70,6 +80,7 @@ const MOCK_DINING_HISTORY = [
       locationLat: "40.7128",
       locationLng: "-74.0060",
       imageUrl: "",
+      image: null,
       rating: 4.7,
       activeUserCount: 0,
     },
@@ -98,6 +109,7 @@ const MOCK_DINING_HISTORY = [
       locationLat: "40.7128",
       locationLng: "-74.0060",
       imageUrl: "",
+      image: null,
       rating: 4.2,
       activeUserCount: 5,
     },
@@ -120,8 +132,20 @@ type DiningHistoryItem = {
   userRating: number;
   partnerRating: number;
   notes: string;
-  restaurant: Restaurant;
-  partner: Partial<UserType>;
+  restaurant: {
+    id: number;
+    name: string;
+    cuisine: string;
+    priceRange: string;
+    address: string;
+    locationLat: string;
+    locationLng: string;
+    imageUrl?: string;
+    image?: string | null;
+    rating: number | string | null;
+    activeUserCount: number | null;
+  };
+  partner: PartialUser;
 }
 
 type DiningHistoryProps = {
@@ -239,8 +263,8 @@ export default function DiningHistory({ userId }: DiningHistoryProps) {
                 <CardContent>
                   <div className="flex items-start space-x-4">
                     <Avatar className="h-10 w-10 border-2 border-white">
-                      <AvatarImage src={item.partner.profileImage} alt={item.partner.name} />
-                      <AvatarFallback>{getInitials(item.partner.name)}</AvatarFallback>
+                      <AvatarImage src={item.partner.profileImage || undefined} alt={item.partner.name || "User"} />
+                      <AvatarFallback>{getInitials(item.partner.name || "User")}</AvatarFallback>
                     </Avatar>
                     
                     <div className="flex-1">
