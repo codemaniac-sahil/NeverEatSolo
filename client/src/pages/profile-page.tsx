@@ -52,6 +52,10 @@ const profileFormSchema = z.object({
   phone: z.string().optional(),
   profileImage: z.string().optional(),
   useMicrosoftCalendar: z.boolean().optional(),
+  foodPreferences: z.array(z.string()).optional(),
+  dietaryRestrictions: z.array(z.string()).optional(),
+  cuisinePreferences: z.array(z.string()).optional(),
+  diningStyles: z.array(z.string()).optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -73,6 +77,10 @@ export default function ProfilePage() {
       phone: user?.phone || "",
       profileImage: user?.profileImage || "",
       useMicrosoftCalendar: user?.useMicrosoftCalendar || false,
+      foodPreferences: user?.foodPreferences || [],
+      dietaryRestrictions: user?.dietaryRestrictions || [],
+      cuisinePreferences: user?.cuisinePreferences || [],
+      diningStyles: user?.diningStyles || [],
     },
   });
   
