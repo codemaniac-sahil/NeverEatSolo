@@ -13,6 +13,7 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByMicrosoftId(microsoftId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, data: Partial<User>): Promise<User | undefined>;
   getNearbyUsers(lat: string, lng: string, radius: number): Promise<User[]>;
@@ -111,6 +112,14 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(users)
       .where(sql`LOWER(${users.email}) = LOWER(${email})`);
+    return user;
+  }
+
+  async getUserByMicrosoftId(microsoftId: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.microsoftId, microsoftId));
     return user;
   }
 

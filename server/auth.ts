@@ -1,6 +1,6 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Express } from "express";
+import { Express, Request, Response, NextFunction } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
@@ -133,5 +133,65 @@ export function setupAuth(app: Express) {
     // Return user without password
     const { password, ...userWithoutPassword } = req.user as SelectUser;
     res.json(userWithoutPassword);
+  });
+
+  // Microsoft authentication endpoints
+  app.post("/api/auth/microsoft", async (req, res, next) => {
+    try {
+      const { microsoftId, email, displayName, accessToken, refreshToken } = req.body;
+
+      if (!microsoftId || !email) {
+        return res.status(400).json({ message: "Microsoft ID and email are required" });
+      }
+
+      // Check if user exists with this Microsoft ID
+      let user = await storage.getUserByMicrosoftId(microsoftId);
+      
+      if (user) {
+        // Update Microsoft token
+        user = await storage.updateUser(user.id, { 
+          microsoftRefreshToken: refreshToken,
+          lastActive: new Date()
+        });
+      } else {
+        // Check if user exists with this email
+        user = await storage.getUserByEmail(email);
+        
+        if (user) {
+          // Link Microsoft account to existing user
+          user = await storage.updateUser(user.id, {
+            microsoftId,
+            microsoftRefreshToken: refreshToken,
+            lastActive: new Date()
+          });
+        } else {
+          // Create new user with Microsoft account
+          // Generate a random username based on email
+          const username = email.split('@')[0] + '_' + Math.floor(Math.random() * 10000);
+          // Generate a random secure password (user won't need this for login)
+          const password = await hashPassword(randomBytes(16).toString('hex'));
+          
+          user = await storage.createUser({
+            username,
+            password,
+            name: displayName || username,
+            email,
+            microsoftId,
+            microsoftRefreshToken: refreshToken,
+            isVerified: true, // Microsoft login is considered verified
+          });
+        }
+      }
+
+      // Login the user
+      req.login(user, (err) => {
+        if (err) return next(err);
+        // Return user without password
+        const { password, ...userWithoutPassword } = user;
+        res.status(200).json(userWithoutPassword);
+      });
+    } catch (err) {
+      next(err);
+    }
   });
 }

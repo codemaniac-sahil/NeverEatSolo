@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Utensils, MapPin, Users } from "lucide-react";
+import { loginWithMicrosoft, handleRedirectResponse } from "@/services/microsoft-auth";
 
 // Extend the schemas to add validation
 const registerSchema = insertUserSchema.extend({
@@ -38,6 +39,41 @@ export default function AuthPage() {
   const [_, navigate] = useLocation();
   const { user, loginMutation, registerMutation } = useAuth();
   const [activeTab, setActiveTab] = useState<string>("login");
+  const [isProcessingMicrosoftAuth, setIsProcessingMicrosoftAuth] = useState(false);
+
+  // Handle Microsoft authentication redirect
+  useEffect(() => {
+    async function handleMicrosoftRedirect() {
+      try {
+        setIsProcessingMicrosoftAuth(true);
+        const response = await handleRedirectResponse();
+        if (response) {
+          // Successfully authenticated with Microsoft
+          // Here we would typically trigger a login/register API call with Microsoft credentials
+          console.log("Microsoft authentication successful", response);
+          
+          // TODO: Implement Microsoft login/registration with backend
+          // For now, we'll just redirect to home page for demo purposes
+          navigate("/");
+        }
+      } catch (error) {
+        console.error("Error handling Microsoft redirect:", error);
+      } finally {
+        setIsProcessingMicrosoftAuth(false);
+      }
+    }
+
+    handleMicrosoftRedirect();
+  }, [navigate]);
+
+  // Handle Microsoft login button click
+  const handleMicrosoftLogin = async () => {
+    try {
+      await loginWithMicrosoft();
+    } catch (error) {
+      console.error("Error logging in with Microsoft:", error);
+    }
+  };
 
   // Redirect if already logged in
   useEffect(() => {
@@ -197,11 +233,19 @@ export default function AuthPage() {
                     </svg>
                     Google
                   </Button>
-                  <Button variant="outline" className="w-full">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-5 w-5 mr-2 text-blue-600 fill-current">
-                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={handleMicrosoftLogin}
+                    disabled={isProcessingMicrosoftAuth}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" className="mr-2">
+                      <path fill="#f25022" d="M1 1h10v10H1V1z"/>
+                      <path fill="#00a4ef" d="M1 13h10v10H1V13z"/>
+                      <path fill="#7fba00" d="M13 1h10v10H13V1z"/>
+                      <path fill="#ffb900" d="M13 13h10v10H13V13z"/>
                     </svg>
-                    Facebook
+                    {isProcessingMicrosoftAuth ? "Signing in..." : "Microsoft"}
                   </Button>
                 </div>
               </div>
@@ -329,6 +373,34 @@ export default function AuthPage() {
                   </Button>
                 </form>
               </Form>
+              
+              <div className="mt-6">
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-neutral-200"></div>
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-white text-neutral-700">Or continue with</span>
+                  </div>
+                </div>
+                
+                <div className="mt-6 grid grid-cols-1 gap-3">
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={handleMicrosoftLogin}
+                    disabled={isProcessingMicrosoftAuth}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" className="mr-2">
+                      <path fill="#f25022" d="M1 1h10v10H1V1z"/>
+                      <path fill="#00a4ef" d="M1 13h10v10H1V13z"/>
+                      <path fill="#7fba00" d="M13 1h10v10H13V1z"/>
+                      <path fill="#ffb900" d="M13 13h10v10H13V13z"/>
+                    </svg>
+                    {isProcessingMicrosoftAuth ? "Signing in..." : "Register with Microsoft"}
+                  </Button>
+                </div>
+              </div>
               
               <p className="mt-8 text-center text-sm text-neutral-700">
                 Already have an account?{" "}
