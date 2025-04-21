@@ -10,6 +10,10 @@ import MessagingPage from "@/pages/messaging-page";
 import SavedRestaurantsPage from "@/pages/saved-restaurants-page";
 import MatchesPage from "@/pages/matches-page";
 import RestaurantsPage from "@/pages/restaurants-page";
+import FriendsPage from "@/pages/friends-page";
+import DiningCirclesPage from "@/pages/dining-circles-page";
+import RecommendationsPage from "@/pages/recommendations-page";
+import AvailabilityPage from "@/pages/availability-page";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "./hooks/use-auth";
 
@@ -36,6 +40,18 @@ function Router() {
       </Route>
       <Route path="/restaurants">
         <ProtectedRoute path="/restaurants" component={RestaurantsPage} />
+      </Route>
+      <Route path="/friends">
+        <ProtectedRoute path="/friends" component={FriendsPage} />
+      </Route>
+      <Route path="/dining-circles">
+        <ProtectedRoute path="/dining-circles" component={DiningCirclesPage} />
+      </Route>
+      <Route path="/recommendations">
+        <ProtectedRoute path="/recommendations" component={RecommendationsPage} />
+      </Route>
+      <Route path="/availability">
+        <ProtectedRoute path="/availability" component={AvailabilityPage} />
       </Route>
       <Route path="/auth" component={AuthPage} />
       <Route>

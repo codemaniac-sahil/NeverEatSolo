@@ -50,11 +50,11 @@ export default function SiteHeader() {
         </div>
       </Link>
       
-      <Link href="/saved">
+      <Link href="/friends">
         <div className={`text-sm uppercase tracking-wider font-light hover:text-primary transition-colors px-4 py-2 border-b-2 ${
-          location === "/saved" ? "border-primary text-primary" : "border-transparent text-zinc-400"
+          location === "/friends" ? "border-primary text-primary" : "border-transparent text-zinc-400"
         }`}>
-          Saved
+          Friends
         </div>
       </Link>
       
@@ -71,6 +71,30 @@ export default function SiteHeader() {
           location === "/restaurants" ? "border-primary text-primary" : "border-transparent text-zinc-400"
         }`}>
           Restaurants
+        </div>
+      </Link>
+      
+      <Link href="/recommendations">
+        <div className={`text-sm uppercase tracking-wider font-light hover:text-primary transition-colors px-4 py-2 border-b-2 ${
+          location === "/recommendations" ? "border-primary text-primary" : "border-transparent text-zinc-400"
+        }`}>
+          Recommendations
+        </div>
+      </Link>
+      
+      <Link href="/dining-circles">
+        <div className={`text-sm uppercase tracking-wider font-light hover:text-primary transition-colors px-4 py-2 border-b-2 ${
+          location === "/dining-circles" ? "border-primary text-primary" : "border-transparent text-zinc-400"
+        }`}>
+          Circles
+        </div>
+      </Link>
+      
+      <Link href="/availability">
+        <div className={`text-sm uppercase tracking-wider font-light hover:text-primary transition-colors px-4 py-2 border-b-2 ${
+          location === "/availability" ? "border-primary text-primary" : "border-transparent text-zinc-400"
+        }`}>
+          Availability
         </div>
       </Link>
     </>
