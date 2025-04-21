@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, json, primaryKey } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -97,6 +97,63 @@ export const savedRestaurants = pgTable("saved_restaurants", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Friends relationship model
+export const friends = pgTable("friends", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  friendId: integer("friend_id").notNull().references(() => users.id),
+  status: text("status").notNull().default("pending"), // pending, accepted, declined, blocked
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Dining Circles (groups) model
+export const diningCircles = pgTable("dining_circles", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  createdBy: integer("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  isPrivate: boolean("is_private").default(false).notNull(),
+  image: text("image"),
+});
+
+// Dining Circle Members
+export const diningCircleMembers = pgTable("dining_circle_members", {
+  diningCircleId: integer("dining_circle_id").notNull().references(() => diningCircles.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  role: text("role").notNull().default("member"), // owner, admin, member
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.diningCircleId, t.userId] })
+}));
+
+// User Availability Status
+export const userAvailabilities = pgTable("user_availabilities", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  status: text("status").notNull().default("unavailable"), // available, busy, unavailable
+  startTime: timestamp("start_time").notNull().defaultNow(),
+  endTime: timestamp("end_time"),
+  notes: text("notes"),
+  visibility: text("visibility").notNull().default("public"), // public, friends, circles, private
+  locationLat: text("location_lat"),
+  locationLng: text("location_lng"),
+  preferredRadius: integer("preferred_radius"), // in kilometers
+  preferredCuisines: json("preferred_cuisines").$type<string[]>().default([]),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Restaurant Recommendations
+export const restaurantRecommendations = pgTable("restaurant_recommendations", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  restaurantId: integer("restaurant_id").notNull().references(() => restaurants.id),
+  score: integer("score").notNull().default(0), // Recommendation score (0-100)
+  reason: text("reason"), // Why this restaurant was recommended
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  viewedAt: timestamp("viewed_at"),
+});
+
 // Define relations
 export const usersRelations = relations(users, ({ many }) => ({
   sentInvitations: many(invitations, { relationName: "sentInvitations" }),
@@ -106,11 +163,19 @@ export const usersRelations = relations(users, ({ many }) => ({
   conversations1: many(conversations, { relationName: "userConversations1" }),
   conversations2: many(conversations, { relationName: "userConversations2" }),
   savedRestaurants: many(savedRestaurants),
+  // New relations
+  sentFriendRequests: many(friends, { relationName: "sentFriendRequests" }),
+  receivedFriendRequests: many(friends, { relationName: "receivedFriendRequests" }),
+  createdCircles: many(diningCircles, { relationName: "circleCreator" }),
+  circlesMemberships: many(diningCircleMembers, { relationName: "circleMember" }),
+  availabilities: many(userAvailabilities),
+  recommendations: many(restaurantRecommendations),
 }));
 
 export const restaurantsRelations = relations(restaurants, ({ many }) => ({
   invitations: many(invitations),
   savedBy: many(savedRestaurants),
+  recommendations: many(restaurantRecommendations),
 }));
 
 export const savedRestaurantsRelations = relations(savedRestaurants, ({ one }) => ({
