@@ -153,8 +153,8 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
       <div className="p-4 border-b bg-muted/40 flex items-center">
         <Avatar className="h-10 w-10">
           <AvatarImage
-            src={conversation.otherUser.profileImage}
-            alt={conversation.otherUser.name}
+            src={conversation.otherUser.profileImage || undefined}
+            alt={conversation.otherUser.name || "User"}
           />
           <AvatarFallback>
             {conversation.otherUser.name?.substring(0, 2).toUpperCase() || "U"}
@@ -188,8 +188,8 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
                   {!isCurrentUser && (
                     <Avatar className="h-8 w-8 mr-2 mt-1">
                       <AvatarImage
-                        src={message.sender.profileImage}
-                        alt={message.sender.name}
+                        src={message.sender.profileImage || undefined}
+                        alt={message.sender.name || "User"}
                       />
                       <AvatarFallback>
                         {message.sender.name?.substring(0, 2).toUpperCase() || "U"}

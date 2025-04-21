@@ -24,14 +24,14 @@ export default function MessagingPage() {
     error,
   } = useQuery<ConversationWithDetails[]>({
     queryKey: ["/api/conversations"],
-    queryFn: getQueryFn(),
+    queryFn: getQueryFn({ on401: "returnNull" }),
     enabled: !!user,
   });
 
   // Get unread message count for notification purposes
   const { data: unreadCount } = useQuery<{ count: number }>({
     queryKey: ["/api/messages/unread-count"],
-    queryFn: getQueryFn(),
+    queryFn: getQueryFn({ on401: "returnNull" }),
     enabled: !!user,
   });
 

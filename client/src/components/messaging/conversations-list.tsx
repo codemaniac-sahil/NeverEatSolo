@@ -32,7 +32,7 @@ export default function ConversationsList({
     error,
   } = useQuery<ConversationWithDetails[]>({
     queryKey: ["/api/conversations"],
-    queryFn: getQueryFn(),
+    queryFn: getQueryFn({ on401: "returnNull" }),
     enabled: !!user,
   });
 
@@ -101,7 +101,7 @@ export default function ConversationsList({
             >
               <CardContent className="p-4 flex items-center">
                 <Avatar className="h-10 w-10 mr-3">
-                  <AvatarImage src={otherUser.profileImage} alt={otherUser.name} />
+                  <AvatarImage src={otherUser.profileImage || undefined} alt={otherUser.name || "User"} />
                   <AvatarFallback>
                     {otherUser.name?.substring(0, 2).toUpperCase() || "U"}
                   </AvatarFallback>
