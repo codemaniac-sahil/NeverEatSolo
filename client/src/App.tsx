@@ -7,6 +7,7 @@ import AuthPage from "@/pages/auth-page";
 import ProfilePage from "@/pages/profile-page";
 import OnboardingPage from "@/pages/onboarding-page";
 import MessagingPage from "@/pages/messaging-page";
+import SavedRestaurantsPage from "@/pages/saved-restaurants-page";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "./hooks/use-auth";
 
@@ -24,6 +25,9 @@ function Router() {
       </Route>
       <Route path="/messages">
         <ProtectedRoute path="/messages" component={MessagingPage} />
+      </Route>
+      <Route path="/saved">
+        <ProtectedRoute path="/saved" component={SavedRestaurantsPage} />
       </Route>
       <Route path="/auth" component={AuthPage} />
       <Route>
