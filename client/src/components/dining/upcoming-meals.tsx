@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
 import CalendarSync from "./calendar-sync";
 import { Invitation, Restaurant, User } from "@shared/schema";
+import { getQueryFn } from "@/lib/queryClient";
 
 // Toggle this to use mock data
 const DEMO_MODE = true;
@@ -129,12 +130,7 @@ export default function UpcomingMeals() {
   // Fetch upcoming meals from API when not in demo mode
   const { data: apiUpcomingMeals = [], isLoading: isApiLoading } = useQuery<UpcomingMeal[]>({
     queryKey: ["/api/meals/upcoming"],
-    queryFn: async () => {
-      if (!user) return [];
-      const response = await fetch("/api/meals/upcoming");
-      if (!response.ok) throw new Error("Failed to fetch upcoming meals");
-      return response.json();
-    },
+    queryFn: getQueryFn(),
     enabled: !DEMO_MODE && !!user
   });
   
