@@ -532,6 +532,40 @@ export default function NearbyRestaurants() {
                     </span>
                   </div>
                   
+                  {!expanded && (
+                    <div className="flex gap-2 mt-4">
+                      {savedRestaurants?.some(saved => saved.restaurantId === restaurant.id) ? (
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="w-full text-xs"
+                          disabled
+                        >
+                          <BookmarkCheck className="h-3.5 w-3.5 mr-1" />
+                          Saved
+                        </Button>
+                      ) : (
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="w-full text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSavingRestaurant(restaurant);
+                            saveForm.reset({
+                              isPublic: true,
+                              notes: "",
+                              priority: 0
+                            });
+                          }}
+                        >
+                          <Bookmark className="h-3.5 w-3.5 mr-1" />
+                          Save
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                  
                   {expanded && (
                     <>
                       <p className="text-sm text-neutral-600 mt-3">
