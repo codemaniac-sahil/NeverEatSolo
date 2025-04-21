@@ -122,8 +122,8 @@ export default function NewConversationButton({ onConversationCreated }: NewConv
                 >
                   <Avatar className="h-10 w-10 mr-3">
                     <AvatarImage
-                      src={nearbyUser.profileImage}
-                      alt={nearbyUser.name}
+                      src={nearbyUser.profileImage || undefined}
+                      alt={nearbyUser.name || "User"}
                     />
                     <AvatarFallback>
                       {nearbyUser.name?.substring(0, 2).toUpperCase() || "U"}

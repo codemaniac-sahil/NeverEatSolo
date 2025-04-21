@@ -13,12 +13,22 @@ import { AuthProvider } from "./hooks/use-auth";
 function Router() {
   return (
     <Switch>
-      <ProtectedRoute path="/" component={HomePage} />
-      <ProtectedRoute path="/profile" component={ProfilePage} />
-      <ProtectedRoute path="/onboarding" component={OnboardingPage} />
-      <ProtectedRoute path="/messages" component={MessagingPage} />
+      <Route path="/">
+        <ProtectedRoute path="/" component={HomePage} />
+      </Route>
+      <Route path="/profile">
+        <ProtectedRoute path="/profile" component={ProfilePage} />
+      </Route>
+      <Route path="/onboarding">
+        <ProtectedRoute path="/onboarding" component={OnboardingPage} />
+      </Route>
+      <Route path="/messages">
+        <ProtectedRoute path="/messages" component={MessagingPage} />
+      </Route>
       <Route path="/auth" component={AuthPage} />
-      <Route component={NotFound} />
+      <Route>
+        <NotFound />
+      </Route>
     </Switch>
   );
 }

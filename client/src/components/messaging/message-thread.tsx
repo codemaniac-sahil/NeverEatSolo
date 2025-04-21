@@ -121,8 +121,8 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
           <div className="flex items-center">
             <Avatar className="h-10 w-10">
               <AvatarImage
-                src={conversation.otherUser.profileImage}
-                alt={conversation.otherUser.name}
+                src={conversation.otherUser.profileImage || undefined}
+                alt={conversation.otherUser.name || "User"}
               />
               <AvatarFallback>
                 {conversation.otherUser.name?.substring(0, 2).toUpperCase() || "U"}
