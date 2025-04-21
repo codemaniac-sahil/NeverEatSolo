@@ -152,12 +152,12 @@ export default function SavedRestaurants() {
                         </Tooltip>
                       </TooltipProvider>
                     )}
-                    {savedRest.priority > 0 && (
+                    {typeof savedRest.priority === 'number' && savedRest.priority > 0 && (
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <div className="flex items-center">
-                              {Array.from({ length: savedRest.priority }).map((_, i) => (
+                              {Array.from({ length: Number(savedRest.priority) }).map((_, i) => (
                                 <Star key={i} size={14} className="text-primary fill-primary" />
                               ))}
                             </div>

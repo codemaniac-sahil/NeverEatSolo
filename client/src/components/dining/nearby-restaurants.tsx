@@ -66,8 +66,12 @@ const mockRestaurants: Restaurant[] = [
     locationLat: "40.7128",
     locationLng: "-74.0060",
     rating: "4.7",
-    image: "",
-    activeUserCount: 8
+    image: null,
+    activeUserCount: 8,
+    googlePlaceId: "place_id_1",
+    website: "https://latrattoria.example.com",
+    phoneNumber: "+1 (555) 123-4567",
+    openingHours: ["Mon-Fri: 11am-10pm", "Sat-Sun: 12pm-11pm"]
   },
   {
     id: 202,
@@ -78,8 +82,12 @@ const mockRestaurants: Restaurant[] = [
     locationLat: "40.7125",
     locationLng: "-74.0058",
     rating: "4.9",
-    image: "",
-    activeUserCount: 5
+    image: null,
+    activeUserCount: 5,
+    googlePlaceId: "place_id_2",
+    website: "https://sushisensation.example.com",
+    phoneNumber: "+1 (555) 987-6543",
+    openingHours: ["Mon-Thu: 12pm-9pm", "Fri-Sun: 12pm-11pm"]
   },
   {
     id: 203,
@@ -90,13 +98,44 @@ const mockRestaurants: Restaurant[] = [
     locationLat: "40.7130",
     locationLng: "-74.0065",
     rating: "4.5",
-    image: "",
-    activeUserCount: 3
+    image: null,
+    activeUserCount: 3,
+    googlePlaceId: "place_id_3",
+    website: "https://spicythai.example.com",
+    phoneNumber: "+1 (555) 321-7654",
+    openingHours: ["Daily: 11:30am-10pm"]
   }
 ];
 
 export default function NearbyRestaurants() {
   const [coordinates, setCoordinates] = useState<{ lat: string, lng: string } | null>(null);
+  const [savingRestaurant, setSavingRestaurant] = useState<Restaurant | null>(null);
+  
+  // Hook for saving restaurants
+  const { 
+    savedRestaurants, 
+    saveRestaurantMutation 
+  } = useSavedRestaurants();
+  
+  // Save restaurant form schema
+  const saveRestaurantSchema = z.object({
+    isPublic: z.boolean().default(true),
+    notes: z.string().optional(),
+    priority: z.number().min(0).max(5).default(0)
+  });
+  
+  // Form for saving restaurant
+  const saveForm = useForm<z.infer<typeof saveRestaurantSchema>>({
+    resolver: zodResolver(saveRestaurantSchema),
+    defaultValues: {
+      isPublic: true,
+      notes: "",
+      priority: 0
+    }
+  });
+  
+  // For toast notifications
+  const { toast } = useToast();
   
   // Filter states
   const [searchTerm, setSearchTerm] = useState("");
@@ -500,7 +539,34 @@ export default function NearbyRestaurants() {
                       </p>
                       
                       <div className="flex gap-2 mt-4">
-                        <Button size="sm" variant="outline" className="flex-1 text-xs">See Details</Button>
+                        {savedRestaurants?.some(saved => saved.restaurantId === restaurant.id) ? (
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="flex-1 text-xs"
+                            disabled
+                          >
+                            <BookmarkCheck className="h-3.5 w-3.5 mr-1" />
+                            Saved
+                          </Button>
+                        ) : (
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="flex-1 text-xs"
+                            onClick={() => {
+                              setSavingRestaurant(restaurant);
+                              saveForm.reset({
+                                isPublic: true,
+                                notes: "",
+                                priority: 0
+                              });
+                            }}
+                          >
+                            <Bookmark className="h-3.5 w-3.5 mr-1" />
+                            Save
+                          </Button>
+                        )}
                         <Button size="sm" className="flex-1 text-xs">Schedule Meal</Button>
                       </div>
                     </>
