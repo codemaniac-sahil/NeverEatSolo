@@ -90,20 +90,32 @@ export default function SettingsPage() {
   // Type-safe accessors with proper typing
   const theme = currentSettings.theme;
   const searchRadius = currentSettings.searchRadius;
-  const notificationPreferences = currentSettings.notificationPreferences as {
-    messages: boolean;
-    friendRequests: boolean;
-    invitations: boolean;
-    mealReminders: boolean;
-    recommendations: boolean;
-    nearbyUsers: boolean;
+  
+  // Initialize default values for notification preferences and privacy settings if they don't exist
+  const defaultNotificationPrefs = {
+    messages: true,
+    friendRequests: true,
+    invitations: true,
+    mealReminders: true,
+    recommendations: true,
+    nearbyUsers: true,
   };
-  const privacySettings = currentSettings.privacySettings as {
-    profileVisibility: string;
-    locationVisibility: string;
-    availabilityVisibility: string;
-    savedRestaurantsVisibility: string;
+  
+  const defaultPrivacySettings = {
+    profileVisibility: 'public',
+    locationVisibility: 'friends',
+    availabilityVisibility: 'friends',
+    savedRestaurantsVisibility: 'friends',
   };
+  
+  // Use existing values or defaults
+  const notificationPreferences = currentSettings.notificationPreferences 
+    ? (currentSettings.notificationPreferences as typeof defaultNotificationPrefs)
+    : defaultNotificationPrefs;
+    
+  const privacySettings = currentSettings.privacySettings
+    ? (currentSettings.privacySettings as typeof defaultPrivacySettings)
+    : defaultPrivacySettings;
 
   return (
     <div className="container max-w-3xl py-10">
