@@ -577,6 +577,125 @@ export default function NearbyRestaurants() {
           </div>
         )}
       </CardContent>
+      
+      {/* Save Restaurant Dialog */}
+      <Dialog open={savingRestaurant !== null} onOpenChange={(open) => !open && setSavingRestaurant(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Save Restaurant</DialogTitle>
+            <DialogDescription>
+              Add {savingRestaurant?.name} to your saved restaurants list.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...saveForm}>
+            <form 
+              onSubmit={saveForm.handleSubmit((values) => {
+                if (savingRestaurant) {
+                  saveRestaurantMutation.mutate({
+                    restaurantId: savingRestaurant.id,
+                    ...values
+                  }, {
+                    onSuccess: () => {
+                      setSavingRestaurant(null);
+                    }
+                  });
+                }
+              })} 
+              className="space-y-6"
+            >
+              <FormField
+                control={saveForm.control}
+                name="isPublic"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">Public</FormLabel>
+                      <FormDescription>
+                        Let others see you've saved this restaurant
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={saveForm.control}
+                name="priority"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Priority (0-5)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number"
+                        min={0}
+                        max={5}
+                        {...field}
+                        onChange={e => field.onChange(parseInt(e.target.value) || 0)}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      How important is it for you to visit this restaurant?
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={saveForm.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notes</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Why do you want to visit this restaurant?"
+                        className="resize-none"
+                        {...field}
+                        value={field.value || ""}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setSavingRestaurant(null)}
+                  className="mr-2"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit"
+                  disabled={saveRestaurantMutation.isPending}
+                >
+                  {saveRestaurantMutation.isPending ? (
+                    <>
+                      <div className="mr-1 animate-spin">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-loader-2">
+                          <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                        </svg>
+                      </div>
+                      Saving...
+                    </>
+                  ) : "Save Restaurant"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
