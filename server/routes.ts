@@ -14,7 +14,15 @@ import {
   insertUserAvailabilitySchema,
   insertRestaurantRecommendationSchema,
   insertNotificationSchema,
-  insertUserSettingsSchema
+  insertUserSettingsSchema,
+  // Corporate schemas
+  insertOrganizationSchema,
+  insertTeamSchema,
+  insertWorkspaceSchema, 
+  insertTeamMemberSchema,
+  insertCampusRestaurantSchema,
+  insertCorporateEventSchema,
+  insertEventParticipantSchema
 } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -1179,6 +1187,375 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err) {
       console.error("Error updating user settings:", err);
       res.status(500).json({ message: "Failed to update user settings" });
+    }
+  });
+
+  // Corporate Organization routes
+  app.post("/api/organizations", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      // Validate the request body
+      const validatedData = insertOrganizationSchema.parse(req.body);
+      const newOrganization = await storage.createOrganization(validatedData);
+      res.status(201).json(newOrganization);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        const validationError = fromZodError(err);
+        return res.status(400).json({ message: validationError.message });
+      }
+      console.error("Error creating organization:", err);
+      res.status(500).json({ message: "Failed to create organization" });
+    }
+  });
+
+  app.get("/api/organizations/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const { id } = req.params;
+      const organization = await storage.getOrganization(parseInt(id));
+      
+      if (!organization) {
+        return res.status(404).json({ message: "Organization not found" });
+      }
+      
+      res.json(organization);
+    } catch (err) {
+      console.error("Error fetching organization:", err);
+      res.status(500).json({ message: "Failed to fetch organization" });
+    }
+  });
+
+  app.get("/api/organizations/domain/:domain", async (req, res) => {
+    try {
+      const { domain } = req.params;
+      const organization = await storage.getOrganizationByDomain(domain);
+      
+      if (!organization) {
+        return res.status(404).json({ message: "Organization not found for this domain" });
+      }
+      
+      res.json(organization);
+    } catch (err) {
+      console.error("Error fetching organization by domain:", err);
+      res.status(500).json({ message: "Failed to fetch organization" });
+    }
+  });
+
+  app.patch("/api/organizations/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const { id } = req.params;
+      const organization = await storage.getOrganization(parseInt(id));
+      
+      if (!organization) {
+        return res.status(404).json({ message: "Organization not found" });
+      }
+      
+      // Check if user is an organization admin
+      const user = await storage.getUser(req.user.id);
+      if (!user || !user.isCorpAdmin || user.organizationId !== organization.id) {
+        return res.status(403).json({ message: "Only organization admins can update organization details" });
+      }
+      
+      const updatedOrganization = await storage.updateOrganization(parseInt(id), req.body);
+      res.json(updatedOrganization);
+    } catch (err) {
+      console.error("Error updating organization:", err);
+      res.status(500).json({ message: "Failed to update organization" });
+    }
+  });
+
+  // Team routes
+  app.post("/api/teams", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      // Validate the request body
+      const validatedData = insertTeamSchema.parse({
+        ...req.body,
+        managerId: req.user.id
+      });
+      
+      // Check if user belongs to the organization
+      const user = await storage.getUser(req.user.id);
+      if (!user || user.organizationId !== validatedData.organizationId) {
+        return res.status(403).json({ message: "You can only create teams in your organization" });
+      }
+      
+      const newTeam = await storage.createTeam(validatedData);
+      res.status(201).json(newTeam);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        const validationError = fromZodError(err);
+        return res.status(400).json({ message: validationError.message });
+      }
+      console.error("Error creating team:", err);
+      res.status(500).json({ message: "Failed to create team" });
+    }
+  });
+
+  app.get("/api/organizations/:organizationId/teams", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const { organizationId } = req.params;
+      
+      // Check if user belongs to the organization
+      const user = await storage.getUser(req.user.id);
+      if (!user || (user.organizationId !== parseInt(organizationId) && !user.isCorpAdmin)) {
+        return res.status(403).json({ message: "You can only view teams in your organization" });
+      }
+      
+      const teams = await storage.getTeamsByOrganization(parseInt(organizationId));
+      res.json(teams);
+    } catch (err) {
+      console.error("Error fetching teams:", err);
+      res.status(500).json({ message: "Failed to fetch teams" });
+    }
+  });
+
+  app.get("/api/teams/:id/members", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const { id } = req.params;
+      const team = await storage.getTeam(parseInt(id));
+      
+      if (!team) {
+        return res.status(404).json({ message: "Team not found" });
+      }
+      
+      // Check if user belongs to the organization
+      const user = await storage.getUser(req.user.id);
+      if (!user || (user.organizationId !== team.organizationId && !user.isCorpAdmin)) {
+        return res.status(403).json({ message: "You can only view team members in your organization" });
+      }
+      
+      const members = await storage.getTeamMembers(parseInt(id));
+      res.json(members);
+    } catch (err) {
+      console.error("Error fetching team members:", err);
+      res.status(500).json({ message: "Failed to fetch team members" });
+    }
+  });
+
+  // Corporate Workspace routes
+  app.post("/api/workspaces", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      // Validate the request body
+      const validatedData = insertWorkspaceSchema.parse(req.body);
+      
+      // Check if user is an organization admin
+      const user = await storage.getUser(req.user.id);
+      if (!user || !user.isCorpAdmin || user.organizationId !== validatedData.organizationId) {
+        return res.status(403).json({ message: "Only organization admins can create workspaces" });
+      }
+      
+      const newWorkspace = await storage.createWorkspace(validatedData);
+      res.status(201).json(newWorkspace);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        const validationError = fromZodError(err);
+        return res.status(400).json({ message: validationError.message });
+      }
+      console.error("Error creating workspace:", err);
+      res.status(500).json({ message: "Failed to create workspace" });
+    }
+  });
+
+  app.get("/api/organizations/:organizationId/workspaces", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const { organizationId } = req.params;
+      
+      // Check if user belongs to the organization
+      const user = await storage.getUser(req.user.id);
+      if (!user || (user.organizationId !== parseInt(organizationId) && !user.isCorpAdmin)) {
+        return res.status(403).json({ message: "You can only view workspaces in your organization" });
+      }
+      
+      const workspaces = await storage.getWorkspacesByOrganization(parseInt(organizationId));
+      res.json(workspaces);
+    } catch (err) {
+      console.error("Error fetching workspaces:", err);
+      res.status(500).json({ message: "Failed to fetch workspaces" });
+    }
+  });
+
+  // Campus Restaurant routes
+  app.post("/api/campus-restaurants", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      // Validate the request body
+      const validatedData = insertCampusRestaurantSchema.parse(req.body);
+      
+      // Check if user is an organization admin
+      const user = await storage.getUser(req.user.id);
+      if (!user || !user.isCorpAdmin || user.organizationId !== validatedData.organizationId) {
+        return res.status(403).json({ message: "Only organization admins can create campus restaurants" });
+      }
+      
+      const newCampusRestaurant = await storage.createCampusRestaurant(validatedData);
+      res.status(201).json(newCampusRestaurant);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        const validationError = fromZodError(err);
+        return res.status(400).json({ message: validationError.message });
+      }
+      console.error("Error creating campus restaurant:", err);
+      res.status(500).json({ message: "Failed to create campus restaurant" });
+    }
+  });
+
+  app.get("/api/organizations/:organizationId/campus-restaurants", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const { organizationId } = req.params;
+      
+      // Check if user belongs to the organization
+      const user = await storage.getUser(req.user.id);
+      if (!user || (user.organizationId !== parseInt(organizationId) && !user.isCorpAdmin)) {
+        return res.status(403).json({ message: "You can only view campus restaurants in your organization" });
+      }
+      
+      const restaurants = await storage.getCampusRestaurantsByOrganization(parseInt(organizationId));
+      res.json(restaurants);
+    } catch (err) {
+      console.error("Error fetching campus restaurants:", err);
+      res.status(500).json({ message: "Failed to fetch campus restaurants" });
+    }
+  });
+
+  app.get("/api/workspaces/:workspaceId/campus-restaurants", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const { workspaceId } = req.params;
+      
+      // Check if user belongs to the workspace's organization
+      const workspace = await storage.getWorkspace(parseInt(workspaceId));
+      if (!workspace) {
+        return res.status(404).json({ message: "Workspace not found" });
+      }
+      
+      const user = await storage.getUser(req.user.id);
+      if (!user || (user.organizationId !== workspace.organizationId && !user.isCorpAdmin)) {
+        return res.status(403).json({ message: "You can only view campus restaurants in your organization" });
+      }
+      
+      const restaurants = await storage.getCampusRestaurantsByWorkspace(parseInt(workspaceId));
+      res.json(restaurants);
+    } catch (err) {
+      console.error("Error fetching campus restaurants:", err);
+      res.status(500).json({ message: "Failed to fetch campus restaurants" });
+    }
+  });
+
+  // User Profile Toggle
+  app.post("/api/user/toggle-work-profile", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const { useWorkProfile } = req.body;
+      
+      if (typeof useWorkProfile !== 'boolean') {
+        return res.status(400).json({ message: "useWorkProfile must be a boolean" });
+      }
+      
+      // Check if user belongs to an organization
+      const user = await storage.getUser(req.user.id);
+      if (!user || !user.organizationId) {
+        return res.status(400).json({ message: "You must belong to an organization to toggle work profile" });
+      }
+      
+      const updatedUser = await storage.toggleWorkProfile(req.user.id, useWorkProfile);
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Don't return password
+      const { password: _, ...userWithoutPassword } = updatedUser;
+      res.json(userWithoutPassword);
+    } catch (err) {
+      console.error("Error toggling work profile:", err);
+      res.status(500).json({ message: "Failed to toggle work profile" });
+    }
+  });
+
+  // Availability for Corporate Lunch
+  app.get("/api/organizations/:organizationId/available-for-lunch", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const { organizationId } = req.params;
+      const { workspaceId, teamId, departmentOnly } = req.query;
+      
+      // Check if user belongs to the organization
+      const user = await storage.getUser(req.user.id);
+      if (!user || user.organizationId !== parseInt(organizationId)) {
+        return res.status(403).json({ message: "You can only view available users in your organization" });
+      }
+      
+      const availableUsers = await storage.getUsersAvailableForLunch(
+        parseInt(organizationId),
+        workspaceId ? parseInt(workspaceId as string) : undefined,
+        teamId ? parseInt(teamId as string) : undefined,
+        departmentOnly === 'true'
+      );
+      
+      res.json(availableUsers);
+    } catch (err) {
+      console.error("Error fetching available users:", err);
+      res.status(500).json({ message: "Failed to fetch available users" });
+    }
+  });
+
+  // Create corporate event (team lunch, etc.)
+  app.post("/api/corporate-events", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      // Validate the request body
+      const validatedData = insertCorporateEventSchema.parse({
+        ...req.body,
+        createdBy: req.user.id
+      });
+      
+      // Check if user belongs to the organization
+      const user = await storage.getUser(req.user.id);
+      if (!user || user.organizationId !== validatedData.organizationId) {
+        return res.status(403).json({ message: "You can only create events in your organization" });
+      }
+      
+      const newEvent = await storage.createCorporateEvent(validatedData);
+      res.status(201).json(newEvent);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        const validationError = fromZodError(err);
+        return res.status(400).json({ message: validationError.message });
+      }
+      console.error("Error creating corporate event:", err);
+      res.status(500).json({ message: "Failed to create corporate event" });
+    }
+  });
+
+  app.get("/api/corporate-events/upcoming", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const events = await storage.getUpcomingCorporateEvents(req.user.id);
+      res.json(events);
+    } catch (err) {
+      console.error("Error fetching upcoming corporate events:", err);
+      res.status(500).json({ message: "Failed to fetch upcoming corporate events" });
     }
   });
 
