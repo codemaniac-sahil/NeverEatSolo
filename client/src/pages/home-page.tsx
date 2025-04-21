@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import SiteHeader from "@/components/layout/site-header";
 import MobileNav from "@/components/layout/mobile-nav";
-import NearbyUsers from "@/components/dining/nearby-users";
+import NearbyUsers from "@/components/dining/nearby-users-new";
 import NearbyRestaurants from "@/components/dining/nearby-restaurants";
 import UpcomingMeals from "@/components/dining/upcoming-meals";
 import ProfileCompletion from "@/components/profile/profile-completion";
@@ -78,87 +78,138 @@ export default function HomePage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-neutral-100">
+    <div className="flex flex-col min-h-screen bg-zinc-950">
       <SiteHeader />
       
-      <main className="flex-grow container mx-auto px-4 py-4 md:py-8 pb-20 md:pb-8">
-        <div className="flex flex-col md:flex-row space-y-6 md:space-y-0 md:space-x-6">
-          {/* Left Column */}
-          <div className="md:w-2/3 space-y-6">
-            {/* Welcome Section */}
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <Avatar className="h-16 w-16 border-2 border-primary">
-                      <AvatarImage src={user.profileImage} alt={user.name} />
-                      <AvatarFallback className="text-lg">{getInitials(user.name)}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h1 className="font-bold text-2xl">Welcome back, {firstName}!</h1>
-                      <p className="text-neutral-600">Ready to find your next dining companion?</p>
-                    </div>
-                  </div>
-                  
-                  <Button 
-                    onClick={() => setShowScheduleModal(true)}
-                    size="lg"
-                    className="hidden md:flex items-center gap-2"
-                  >
-                    <CalendarPlus className="w-5 h-5" />
-                    <span>Schedule a Meal</span>
-                  </Button>
-                </div>
-                
-                <div className="mt-6 flex flex-wrap gap-4">
-                  <div className="flex flex-col items-center bg-neutral-100 rounded-lg p-4 flex-1">
-                    <span className="text-2xl font-bold text-primary">
-                      {upcomingMeals.filter(meal => meal.status === 'pending').length || 0}
-                    </span>
-                    <span className="text-sm text-neutral-600">Pending Invites</span>
-                  </div>
-                  <div className="flex flex-col items-center bg-neutral-100 rounded-lg p-4 flex-1">
-                    <span className="text-2xl font-bold text-primary">
-                      {/* This would be from a real API in production */}
-                      0
-                    </span>
-                    <span className="text-sm text-neutral-600">Matches</span>
-                  </div>
-                  <div className="flex flex-col items-center bg-neutral-100 rounded-lg p-4 flex-1">
-                    <span className="text-2xl font-bold text-primary">
-                      {upcomingMeals.length || 0}
-                    </span>
-                    <span className="text-sm text-neutral-600">Upcoming Meals</span>
-                  </div>
-                </div>
-                
-                {/* Mobile Schedule Button */}
-                <div className="mt-6 md:hidden">
-                  <Button 
-                    onClick={() => setShowScheduleModal(true)}
-                    className="w-full flex items-center justify-center gap-2"
-                  >
-                    <Utensils className="w-4 h-4" />
-                    <span>Schedule a Meal or Meet Now</span>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+      <div className="pt-20 pb-32 bg-zinc-900 relative overflow-hidden">
+        <div className="absolute inset-0 z-0 opacity-20">
+          <div className="absolute inset-0 bg-gradient-to-b from-black to-transparent"></div>
+          <div 
+            className="absolute inset-0 bg-cover bg-center" 
+            style={{
+              backgroundImage: `url('https://images.unsplash.com/photo-1559925393-8be0ec4767c8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2069&q=80')`
+            }}
+          ></div>
+        </div>
+        
+        <div className="elegant-container relative z-10">
+          <div className="max-w-2xl">
+            <h1 className="elegant-heading mb-4">
+              Fine Dining
+              <br/>
+              <span className="text-zinc-100">Together</span>
+            </h1>
             
-            {/* Nearby Users Section */}
-            <NearbyUsers onInvite={handleInvite} />
+            <p className="text-lg md:text-xl font-light text-zinc-400 mb-8 max-w-lg">
+              Connect with like-minded food enthusiasts for memorable dining experiences
+              at the finest establishments in your area.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-4 mt-8">
+              <Button 
+                onClick={() => setShowScheduleModal(true)}
+                className="elegant-button px-6 py-6 text-sm uppercase tracking-widest"
+              >
+                Schedule a Meal
+              </Button>
+              <Button 
+                variant="outline" 
+                className="elegant-button px-6 py-6 text-sm uppercase tracking-widest border-zinc-700 text-zinc-400 hover:bg-zinc-800/50"
+                onClick={() => setShowScheduleModal(true)}
+              >
+                Find Companion
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <main className="elegant-container py-16">
+        <div className="flex items-center space-x-4 mb-10">
+          <Avatar className="h-16 w-16 ring-2 ring-primary/30">
+            <AvatarImage src={user.profileImage} alt={user.name} />
+            <AvatarFallback className="bg-zinc-800 text-primary text-lg">
+              {getInitials(user.name)}
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <h2 className="text-2xl font-light tracking-wide text-zinc-100">
+              Welcome back, <span className="text-primary">{firstName}</span>
+            </h2>
+            <p className="text-zinc-400 font-light">Your culinary adventures await</p>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="md:col-span-2 space-y-12">
+            <section>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-light tracking-wide text-zinc-100">
+                  <span className="text-primary border-l-2 border-primary pl-3 italic">Featured</span> Dining Partners
+                </h2>
+                <Button variant="ghost" className="font-light text-sm uppercase tracking-wider text-primary hover:bg-primary/5">
+                  View All
+                </Button>
+              </div>
+              <div className="elegant-card p-6">
+                <NearbyUsers onInvite={handleInvite} />
+              </div>
+            </section>
+            
+            <section>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-light tracking-wide text-zinc-100">
+                  <span className="text-primary border-l-2 border-primary pl-3 italic">Curated</span> Restaurants
+                </h2>
+                <Button variant="ghost" className="font-light text-sm uppercase tracking-wider text-primary hover:bg-primary/5">
+                  View All
+                </Button>
+              </div>
+              <div className="elegant-card p-6">
+                <NearbyRestaurants />
+              </div>
+            </section>
           </div>
           
-          {/* Right Column */}
-          <div className="md:w-1/3 space-y-6">
-            {/* Nearby Restaurants */}
-            <NearbyRestaurants />
+          <div className="space-y-8">
+            <section>
+              <h2 className="text-2xl font-light tracking-wide text-zinc-100 mb-6">
+                <span className="text-primary border-l-2 border-primary pl-3 italic">Your</span> Calendar
+              </h2>
+              <div className="elegant-card p-6">
+                <UpcomingMeals />
+              </div>
+            </section>
             
-            {/* Upcoming Meals */}
-            <UpcomingMeals />
+            <section className="elegant-card p-6">
+              <h3 className="text-xl font-light tracking-wide text-primary mb-6">Profile Status</h3>
+              <ProfileCompletion />
+            </section>
             
-            {/* Profile Completion */}
-            <ProfileCompletion />
+            <section className="elegant-card p-6">
+              <h3 className="text-xl font-light tracking-wide text-primary mb-4">Your Activity</h3>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center p-4 border border-zinc-800 bg-zinc-900/50">
+                  <div className="text-2xl font-light text-primary">
+                    {upcomingMeals.filter(meal => meal.status === 'pending').length || 0}
+                  </div>
+                  <div className="text-xs text-zinc-500 mt-1">Pending</div>
+                </div>
+                <div className="text-center p-4 border border-zinc-800 bg-zinc-900/50">
+                  <div className="text-2xl font-light text-primary">
+                    {/* This would be from a real API in production */}
+                    0
+                  </div>
+                  <div className="text-xs text-zinc-500 mt-1">Matches</div>
+                </div>
+                <div className="text-center p-4 border border-zinc-800 bg-zinc-900/50">
+                  <div className="text-2xl font-light text-primary">
+                    {upcomingMeals.length || 0}
+                  </div>
+                  <div className="text-xs text-zinc-500 mt-1">Upcoming</div>
+                </div>
+              </div>
+            </section>
           </div>
         </div>
       </main>

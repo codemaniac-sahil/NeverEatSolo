@@ -80,58 +80,62 @@ export default function NewConversationButton({ onConversationCreated }: NewConv
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="flex gap-2">
+        <Button 
+          className="elegant-button text-xs flex gap-2 py-1 px-3 uppercase tracking-wider font-light"
+        >
           <MessageSquarePlus className="h-4 w-4" />
           New Chat
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] bg-zinc-900 border border-zinc-800 p-5 shadow-2xl">
         <DialogHeader>
-          <DialogTitle>Start a conversation</DialogTitle>
-          <DialogDescription>
-            Search and select a user to start chatting with.
+          <DialogTitle className="text-2xl font-light tracking-wide text-zinc-100">Start a conversation</DialogTitle>
+          <DialogDescription className="text-zinc-400 font-light mt-2">
+            Find and connect with compatible dining companions
           </DialogDescription>
         </DialogHeader>
-        <div className="flex items-center border rounded-md px-3 py-2 mt-4">
-          <Search className="h-4 w-4 text-muted-foreground mr-2" />
+        <div className="flex items-center bg-zinc-800/50 border border-zinc-700 px-3 py-2 mt-6">
+          <Search className="h-4 w-4 text-zinc-500 mr-2" />
           <Input
             placeholder="Search by name or occupation..."
-            className="border-0 p-0 shadow-none focus-visible:ring-0"
+            className="border-0 p-0 shadow-none focus-visible:ring-0 bg-transparent placeholder:text-zinc-600"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         {isLoadingUsers ? (
-          <div className="py-8 flex justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <div className="py-12 flex justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary/50" />
           </div>
         ) : filteredUsers.length === 0 ? (
-          <div className="py-8 text-center text-muted-foreground">
-            {searchTerm
-              ? "No users found matching your search"
-              : "No users available to chat with"}
+          <div className="py-12 text-center">
+            <p className="text-zinc-400 font-light">
+              {searchTerm
+                ? "No users found matching your search"
+                : "No users available to chat with"}
+            </p>
           </div>
         ) : (
-          <ScrollArea className="mt-4 max-h-[300px]">
+          <ScrollArea className="mt-6 max-h-[300px] pr-4">
             <div className="space-y-3">
               {filteredUsers.map((nearbyUser) => (
                 <div
                   key={nearbyUser.id}
-                  className="flex items-center p-3 border rounded-md hover:bg-muted/50 cursor-pointer transition-colors"
+                  className="flex items-center p-4 border border-zinc-800 bg-zinc-900/60 hover:bg-zinc-800/50 cursor-pointer transition-all duration-200"
                   onClick={() => startConversation(nearbyUser.id)}
                 >
-                  <Avatar className="h-10 w-10 mr-3">
+                  <Avatar className="h-10 w-10 mr-3 ring-1 ring-zinc-700">
                     <AvatarImage
                       src={nearbyUser.profileImage || undefined}
                       alt={nearbyUser.name || "User"}
                     />
-                    <AvatarFallback>
+                    <AvatarFallback className="bg-zinc-800 text-primary">
                       {nearbyUser.name?.substring(0, 2).toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
-                    <h4 className="font-medium">{nearbyUser.name}</h4>
-                    <p className="text-sm text-muted-foreground">
+                    <h4 className="font-light tracking-wide text-zinc-200">{nearbyUser.name}</h4>
+                    <p className="text-sm text-zinc-500 font-light">
                       {nearbyUser.occupation || "No occupation"}
                     </p>
                   </div>

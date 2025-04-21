@@ -296,43 +296,40 @@ export default function NearbyUsers({ onInvite }: NearbyUsersProps) {
   };
 
   return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="font-bold text-xl">Nearby Dining Companions</h2>
+    <div>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-5">
+        <div className="relative w-full md:w-72">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-500" />
+          <Input 
+            placeholder="Search by name or profession..." 
+            className="pl-10 h-10 bg-zinc-900/30 border-zinc-800 text-zinc-300 placeholder:text-zinc-600 focus-visible:ring-primary/30"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <Select
+            value={sortBy}
+            onValueChange={(value) => setSortBy(value as "compatibility" | "distance" | "activity")}
+          >
+            <SelectTrigger className="h-10 bg-zinc-900/30 border-zinc-800 text-zinc-300 w-48">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent className="bg-zinc-900 border border-zinc-800">
+              <SelectItem value="compatibility" className="text-zinc-300">Best Match</SelectItem>
+              <SelectItem value="distance" className="text-zinc-300">Closest First</SelectItem>
+              <SelectItem value="activity" className="text-zinc-300">Recently Active</SelectItem>
+            </SelectContent>
+          </Select>
           
-          <div className="flex items-center gap-2">
-            <div className="relative w-56 hidden md:block">
-              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400" />
-              <Input 
-                placeholder="Search by name or occupation..." 
-                className="pl-8 h-9 text-sm"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            
-            <Select
-              value={sortBy}
-              onValueChange={(value) => setSortBy(value as "compatibility" | "distance" | "activity")}
-            >
-              <SelectTrigger className="h-9 w-44 text-sm">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="compatibility">Best Match</SelectItem>
-                <SelectItem value="distance">Closest First</SelectItem>
-                <SelectItem value="activity">Recently Active</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="sm" className="text-neutral-600 flex items-center gap-1">
-                  <span>Filter</span>
-                  <Filter className="h-4 w-4" />
-                </Button>
-              </SheetTrigger>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" className="border-zinc-800 bg-zinc-900/30 text-zinc-300 h-10 flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                <span>Filter</span>
+              </Button>
+            </SheetTrigger>
               <SheetContent className="w-full md:max-w-sm overflow-y-auto">
                 <SheetHeader>
                   <SheetTitle>Filter Dining Companions</SheetTitle>
