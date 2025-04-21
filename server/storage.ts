@@ -9,7 +9,9 @@ import {
   diningCircles, type DiningCircle, type InsertDiningCircle,
   diningCircleMembers, type DiningCircleMember, type InsertDiningCircleMember,
   userAvailabilities, type UserAvailability, type InsertUserAvailability,
-  restaurantRecommendations, type RestaurantRecommendation, type InsertRestaurantRecommendation
+  restaurantRecommendations, type RestaurantRecommendation, type InsertRestaurantRecommendation,
+  notifications, type Notification, type InsertNotification,
+  userSettings, type UserSettings, type InsertUserSettings
 } from "@shared/schema";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -116,6 +118,19 @@ export interface IStorage {
   markRecommendationAsViewed(id: number): Promise<RestaurantRecommendation | undefined>;
   deleteRestaurantRecommendation(id: number): Promise<boolean>;
   generateRecommendationsForUser(userId: number): Promise<RestaurantRecommendation[]>;
+  
+  // Notification operations
+  getNotification(id: number): Promise<Notification | undefined>;
+  getUserNotifications(userId: number): Promise<Notification[]>;
+  getUserUnreadNotifications(userId: number): Promise<Notification[]>;
+  createNotification(notification: InsertNotification): Promise<Notification>;
+  markNotificationAsRead(id: number): Promise<Notification | undefined>;
+  deleteNotification(id: number): Promise<boolean>;
+  markAllNotificationsAsRead(userId: number): Promise<void>;
+  
+  // User Settings operations
+  getUserSettings(userId: number): Promise<UserSettings | undefined>;
+  createOrUpdateUserSettings(userId: number, settings: Partial<UserSettings>): Promise<UserSettings>;
   
   // Session store
   sessionStore: session.Store;
@@ -947,6 +962,110 @@ export class DatabaseStorage implements IStorage {
     }
     
     return recommendations;
+  }
+
+  // Notification methods
+  async getNotification(id: number): Promise<Notification | undefined> {
+    const [notification] = await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.id, id));
+    return notification;
+  }
+
+  async getUserNotifications(userId: number): Promise<Notification[]> {
+    return db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.userId, userId))
+      .orderBy(desc(notifications.createdAt));
+  }
+
+  async getUserUnreadNotifications(userId: number): Promise<Notification[]> {
+    return db
+      .select()
+      .from(notifications)
+      .where(
+        and(
+          eq(notifications.userId, userId),
+          eq(notifications.isRead, false)
+        )
+      )
+      .orderBy(desc(notifications.createdAt));
+  }
+
+  async createNotification(insertNotification: InsertNotification): Promise<Notification> {
+    const [notification] = await db
+      .insert(notifications)
+      .values(insertNotification)
+      .returning();
+    return notification;
+  }
+
+  async markNotificationAsRead(id: number): Promise<Notification | undefined> {
+    const [updatedNotification] = await db
+      .update(notifications)
+      .set({ isRead: true })
+      .where(eq(notifications.id, id))
+      .returning();
+    return updatedNotification;
+  }
+
+  async deleteNotification(id: number): Promise<boolean> {
+    const result = await db
+      .delete(notifications)
+      .where(eq(notifications.id, id))
+      .returning();
+    return result.length > 0;
+  }
+
+  async markAllNotificationsAsRead(userId: number): Promise<void> {
+    await db
+      .update(notifications)
+      .set({ isRead: true })
+      .where(
+        and(
+          eq(notifications.userId, userId),
+          eq(notifications.isRead, false)
+        )
+      );
+  }
+
+  // User Settings methods
+  async getUserSettings(userId: number): Promise<UserSettings | undefined> {
+    const [settings] = await db
+      .select()
+      .from(userSettings)
+      .where(eq(userSettings.userId, userId));
+    return settings;
+  }
+
+  async createOrUpdateUserSettings(userId: number, settings: Partial<UserSettings>): Promise<UserSettings> {
+    // Check if settings already exist for this user
+    const existingSettings = await this.getUserSettings(userId);
+
+    if (existingSettings) {
+      // Update existing settings
+      const [updatedSettings] = await db
+        .update(userSettings)
+        .set({
+          ...settings,
+          lastUpdated: new Date()
+        })
+        .where(eq(userSettings.userId, userId))
+        .returning();
+      return updatedSettings;
+    } else {
+      // Create new settings
+      const [newSettings] = await db
+        .insert(userSettings)
+        .values({
+          userId,
+          ...settings
+        })
+        .returning();
+      return newSettings;
+    }
   }
 
   private async seedInitialData() {

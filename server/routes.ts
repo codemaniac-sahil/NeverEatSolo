@@ -12,7 +12,9 @@ import {
   insertDiningCircleSchema,
   insertDiningCircleMemberSchema,
   insertUserAvailabilitySchema,
-  insertRestaurantRecommendationSchema
+  insertRestaurantRecommendationSchema,
+  insertNotificationSchema,
+  insertUserSettingsSchema
 } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
