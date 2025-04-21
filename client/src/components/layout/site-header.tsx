@@ -43,35 +43,35 @@ export default function SiteHeader() {
   const NavLinks = () => (
     <>
       <Link href="/">
-        <a className={`text-sm uppercase tracking-wider font-light hover:text-primary transition-colors px-4 py-2 border-b-2 ${
+        <div className={`text-sm uppercase tracking-wider font-light hover:text-primary transition-colors px-4 py-2 border-b-2 ${
           location === "/" ? "border-primary text-primary" : "border-transparent text-zinc-400"
         }`}>
           Home
-        </a>
+        </div>
       </Link>
       
-      <Link href="/matches">
-        <a className={`text-sm uppercase tracking-wider font-light hover:text-primary transition-colors px-4 py-2 border-b-2 ${
-          location === "/matches" ? "border-primary text-primary" : "border-transparent text-zinc-400"
+      <Link href="/saved">
+        <div className={`text-sm uppercase tracking-wider font-light hover:text-primary transition-colors px-4 py-2 border-b-2 ${
+          location === "/saved" ? "border-primary text-primary" : "border-transparent text-zinc-400"
         }`}>
-          Matches
-        </a>
+          Saved
+        </div>
       </Link>
       
       <Link href="/messages">
-        <a className={`text-sm uppercase tracking-wider font-light hover:text-primary transition-colors px-4 py-2 border-b-2 ${
+        <div className={`text-sm uppercase tracking-wider font-light hover:text-primary transition-colors px-4 py-2 border-b-2 ${
           location === "/messages" ? "border-primary text-primary" : "border-transparent text-zinc-400"
         }`}>
           Messages
-        </a>
+        </div>
       </Link>
       
       <Link href="/restaurants">
-        <a className={`text-sm uppercase tracking-wider font-light hover:text-primary transition-colors px-4 py-2 border-b-2 ${
+        <div className={`text-sm uppercase tracking-wider font-light hover:text-primary transition-colors px-4 py-2 border-b-2 ${
           location === "/restaurants" ? "border-primary text-primary" : "border-transparent text-zinc-400"
         }`}>
           Restaurants
-        </a>
+        </div>
       </Link>
     </>
   );
@@ -84,7 +84,7 @@ export default function SiteHeader() {
             <Link href="/" className="flex items-center">
               <Utensils className="text-primary h-5 w-5 mr-2" />
               <span className="font-medium text-xl tracking-wider text-zinc-100">
-                NEVER DINE <span className="text-primary">ALONE</span>
+                NEVER EAT <span className="text-primary">SOLO</span>
               </span>
             </Link>
             
@@ -114,17 +114,21 @@ export default function SiteHeader() {
               
               <DropdownMenuContent align="end" className="w-56 bg-zinc-900 border border-zinc-800">
                 <Link href="/profile">
-                  <DropdownMenuItem className="hover:bg-zinc-800 cursor-pointer">
-                    <UserIcon className="mr-2 h-4 w-4 text-zinc-400" />
-                    <span>Your Profile</span>
-                  </DropdownMenuItem>
+                  <div className="w-full">
+                    <DropdownMenuItem className="hover:bg-zinc-800 cursor-pointer">
+                      <UserIcon className="mr-2 h-4 w-4 text-zinc-400" />
+                      <span>Your Profile</span>
+                    </DropdownMenuItem>
+                  </div>
                 </Link>
                 
                 <Link href="/settings">
-                  <DropdownMenuItem className="hover:bg-zinc-800 cursor-pointer">
-                    <Settings className="mr-2 h-4 w-4 text-zinc-400" />
-                    <span>Settings</span>
-                  </DropdownMenuItem>
+                  <div className="w-full">
+                    <DropdownMenuItem className="hover:bg-zinc-800 cursor-pointer">
+                      <Settings className="mr-2 h-4 w-4 text-zinc-400" />
+                      <span>Settings</span>
+                    </DropdownMenuItem>
+                  </div>
                 </Link>
                 
                 <DropdownMenuSeparator className="bg-zinc-800" />

@@ -8,6 +8,8 @@ import ProfilePage from "@/pages/profile-page";
 import OnboardingPage from "@/pages/onboarding-page";
 import MessagingPage from "@/pages/messaging-page";
 import SavedRestaurantsPage from "@/pages/saved-restaurants-page";
+import MatchesPage from "@/pages/matches-page";
+import RestaurantsPage from "@/pages/restaurants-page";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "./hooks/use-auth";
 
@@ -28,6 +30,12 @@ function Router() {
       </Route>
       <Route path="/saved">
         <ProtectedRoute path="/saved" component={SavedRestaurantsPage} />
+      </Route>
+      <Route path="/matches">
+        <ProtectedRoute path="/matches" component={MatchesPage} />
+      </Route>
+      <Route path="/restaurants">
+        <ProtectedRoute path="/restaurants" component={RestaurantsPage} />
       </Route>
       <Route path="/auth" component={AuthPage} />
       <Route>
