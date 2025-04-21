@@ -1043,6 +1043,145 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Notification routes
+  app.get("/api/notifications", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const notifications = await storage.getUserNotifications(req.user.id);
+      res.json(notifications);
+    } catch (err) {
+      console.error("Error fetching notifications:", err);
+      res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
+  app.get("/api/notifications/unread", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const notifications = await storage.getUserUnreadNotifications(req.user.id);
+      res.json(notifications);
+    } catch (err) {
+      console.error("Error fetching unread notifications:", err);
+      res.status(500).json({ message: "Failed to fetch unread notifications" });
+    }
+  });
+
+  app.post("/api/notifications", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      // Validate the request body
+      const validatedData = insertNotificationSchema.parse({
+        ...req.body,
+        userId: req.user.id
+      });
+      const newNotification = await storage.createNotification(validatedData);
+      res.status(201).json(newNotification);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        const validationError = fromZodError(err);
+        return res.status(400).json({ message: validationError.message });
+      }
+      console.error("Error creating notification:", err);
+      res.status(500).json({ message: "Failed to create notification" });
+    }
+  });
+
+  app.patch("/api/notifications/:id/read", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const { id } = req.params;
+      
+      // Get the notification
+      const notification = await storage.getNotification(parseInt(id));
+      if (!notification) {
+        return res.status(404).json({ message: "Notification not found" });
+      }
+      
+      // Check if the user owns this notification
+      if (notification.userId !== req.user.id) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      // Mark as read
+      const updatedNotification = await storage.markNotificationAsRead(parseInt(id));
+      res.json(updatedNotification);
+    } catch (err) {
+      console.error("Error marking notification as read:", err);
+      res.status(500).json({ message: "Failed to mark notification as read" });
+    }
+  });
+
+  app.patch("/api/notifications/mark-all-read", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      await storage.markAllNotificationsAsRead(req.user.id);
+      res.status(200).json({ success: true });
+    } catch (err) {
+      console.error("Error marking all notifications as read:", err);
+      res.status(500).json({ message: "Failed to mark all notifications as read" });
+    }
+  });
+
+  app.delete("/api/notifications/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const { id } = req.params;
+      
+      // Get the notification
+      const notification = await storage.getNotification(parseInt(id));
+      if (!notification) {
+        return res.status(404).json({ message: "Notification not found" });
+      }
+      
+      // Check if the user owns this notification
+      if (notification.userId !== req.user.id) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      // Delete notification
+      const success = await storage.deleteNotification(parseInt(id));
+      if (success) {
+        res.status(204).end();
+      } else {
+        res.status(500).json({ message: "Failed to delete notification" });
+      }
+    } catch (err) {
+      console.error("Error deleting notification:", err);
+      res.status(500).json({ message: "Failed to delete notification" });
+    }
+  });
+
+  // User Settings routes
+  app.get("/api/settings", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const settings = await storage.getUserSettings(req.user.id);
+      res.json(settings || {});
+    } catch (err) {
+      console.error("Error fetching user settings:", err);
+      res.status(500).json({ message: "Failed to fetch user settings" });
+    }
+  });
+
+  app.post("/api/settings", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const settings = await storage.createOrUpdateUserSettings(req.user.id, req.body);
+      res.status(200).json(settings);
+    } catch (err) {
+      console.error("Error updating user settings:", err);
+      res.status(500).json({ message: "Failed to update user settings" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
