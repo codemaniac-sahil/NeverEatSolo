@@ -2,14 +2,15 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { 
-  Bell, 
   ChevronDown, 
   Utensils, 
   User as UserIcon,
   LogOut,
   Settings,
-  Menu
+  Menu,
+  Bell
 } from "lucide-react";
+import { NotificationList } from "@/components/notifications/notification-list";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -118,9 +119,7 @@ export default function SiteHeader() {
           </div>
           
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" className="rounded-full text-zinc-400 hover:text-primary hover:bg-zinc-800/50">
-              <Bell className="h-5 w-5" />
-            </Button>
+            <NotificationList />
             
             <DropdownMenu open={open} onOpenChange={setOpen}>
               <DropdownMenuTrigger asChild>
