@@ -14,7 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { CalendarPlus, Utensils } from "lucide-react";
 import { User } from "@shared/schema";
 
-import ScheduleMealModal from "@/components/dining/schedule-meal";
+import JoinMeModal from "@/components/dining/join-me";
 
 // Toggle this to view the page without authentication
 const DEMO_MODE = true;
@@ -226,8 +226,8 @@ export default function HomePage() {
         />
       )}
       
-      {/* Schedule Meal Modal */}
-      <ScheduleMealModal
+      {/* Join Me Modal */}
+      <JoinMeModal
         isOpen={showScheduleModal}
         onClose={() => setShowScheduleModal(false)}
       />

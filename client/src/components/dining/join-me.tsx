@@ -116,12 +116,12 @@ const durationOptions = [
   { value: "custom", label: "Custom" },
 ];
 
-interface ScheduleMealModalProps {
+interface JoinMeModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export default function ScheduleMealModal({ isOpen, onClose }: ScheduleMealModalProps) {
+export default function JoinMeModal({ isOpen, onClose }: JoinMeModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<string>("planned");
