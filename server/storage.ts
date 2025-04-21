@@ -11,7 +11,14 @@ import {
   userAvailabilities, type UserAvailability, type InsertUserAvailability,
   restaurantRecommendations, type RestaurantRecommendation, type InsertRestaurantRecommendation,
   notifications, type Notification, type InsertNotification,
-  userSettings, type UserSettings, type InsertUserSettings
+  userSettings, type UserSettings, type InsertUserSettings,
+  organizations, type Organization, type InsertOrganization,
+  teams, type Team, type InsertTeam,
+  teamMembers, type TeamMember, type InsertTeamMember,
+  workspaces, type Workspace, type InsertWorkspace,
+  campusRestaurants, type CampusRestaurant, type InsertCampusRestaurant,
+  corporateEvents, type CorporateEvent, type InsertCorporateEvent,
+  eventParticipants, type EventParticipant, type InsertEventParticipant
 } from "@shared/schema";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -191,6 +198,288 @@ export class DatabaseStorage implements IStorage {
     
     // Seed some initial data
     this.seedInitialData();
+  }
+  
+  // Corporate Organization methods
+  async getOrganization(id: number): Promise<Organization | undefined> {
+    const [organization] = await db
+      .select()
+      .from(organizations)
+      .where(eq(organizations.id, id));
+    
+    return organization;
+  }
+  
+  async getOrganizationByDomain(domain: string): Promise<Organization | undefined> {
+    const [organization] = await db
+      .select()
+      .from(organizations)
+      .where(eq(organizations.domain, domain));
+    
+    return organization;
+  }
+  
+  async createOrganization(data: InsertOrganization): Promise<Organization> {
+    const [organization] = await db
+      .insert(organizations)
+      .values(data)
+      .returning();
+    
+    return organization;
+  }
+  
+  async updateOrganization(id: number, data: Partial<Organization>): Promise<Organization | undefined> {
+    const [updatedOrganization] = await db
+      .update(organizations)
+      .set(data)
+      .where(eq(organizations.id, id))
+      .returning();
+    
+    return updatedOrganization;
+  }
+  
+  // Corporate Team methods
+  async getTeam(id: number): Promise<Team | undefined> {
+    const [team] = await db
+      .select()
+      .from(teams)
+      .where(eq(teams.id, id));
+    
+    return team;
+  }
+  
+  async getTeamsByOrganization(organizationId: number): Promise<Team[]> {
+    return db
+      .select()
+      .from(teams)
+      .where(eq(teams.organizationId, organizationId));
+  }
+  
+  async createTeam(data: InsertTeam): Promise<Team> {
+    const [team] = await db
+      .insert(teams)
+      .values(data)
+      .returning();
+    
+    return team;
+  }
+  
+  async updateTeam(id: number, data: Partial<Team>): Promise<Team | undefined> {
+    const [updatedTeam] = await db
+      .update(teams)
+      .set(data)
+      .where(eq(teams.id, id))
+      .returning();
+    
+    return updatedTeam;
+  }
+  
+  async getTeamMembers(teamId: number): Promise<(TeamMember & { user: User })[]> {
+    const teamMembersWithUsers = await db
+      .select({
+        id: teamMembers.id,
+        teamId: teamMembers.teamId,
+        userId: teamMembers.userId,
+        role: teamMembers.role,
+        createdAt: teamMembers.createdAt,
+        user: users
+      })
+      .from(teamMembers)
+      .innerJoin(users, eq(teamMembers.userId, users.id))
+      .where(eq(teamMembers.teamId, teamId));
+    
+    return teamMembersWithUsers;
+  }
+  
+  // Corporate User methods
+  async getUsersByOrganization(organizationId: number): Promise<User[]> {
+    return db
+      .select()
+      .from(users)
+      .where(eq(users.organizationId, organizationId));
+  }
+  
+  async getUsersByWorkspace(workspaceId: number): Promise<User[]> {
+    return db
+      .select()
+      .from(users)
+      .where(eq(users.workspaceId, workspaceId));
+  }
+  
+  async getUsersByTeam(teamId: number): Promise<User[]> {
+    const teamMembersWithUsers = await db
+      .select({
+        user: users
+      })
+      .from(teamMembers)
+      .innerJoin(users, eq(teamMembers.userId, users.id))
+      .where(eq(teamMembers.teamId, teamId));
+    
+    return teamMembersWithUsers.map(item => item.user);
+  }
+  
+  async getUsersAvailableForLunch(
+    organizationId: number,
+    workspaceId?: number,
+    teamId?: number,
+    departmentOnly?: boolean
+  ): Promise<(UserAvailability & { user: User })[]> {
+    let query = db
+      .select({
+        id: userAvailabilities.id,
+        userId: userAvailabilities.userId,
+        startTime: userAvailabilities.startTime,
+        endTime: userAvailabilities.endTime,
+        status: userAvailabilities.status,
+        createdAt: userAvailabilities.createdAt,
+        user: users
+      })
+      .from(userAvailabilities)
+      .innerJoin(users, eq(userAvailabilities.userId, users.id))
+      .where(
+        and(
+          eq(users.organizationId, organizationId),
+          eq(users.useWorkProfile, true),
+          eq(userAvailabilities.status, 'available')
+        )
+      );
+    
+    if (workspaceId) {
+      query = query.where(eq(users.workspaceId, workspaceId));
+    }
+    
+    if (departmentOnly) {
+      // This would need the current user's department to filter
+      // Simplified version just returns all available users
+    }
+    
+    return query;
+  }
+  
+  async toggleWorkProfile(userId: number, useWorkProfile: boolean): Promise<User | undefined> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ useWorkProfile })
+      .where(eq(users.id, userId))
+      .returning();
+    
+    return updatedUser;
+  }
+  
+  // Corporate Workspace methods
+  async getWorkspace(id: number): Promise<Workspace | undefined> {
+    const [workspace] = await db
+      .select()
+      .from(workspaces)
+      .where(eq(workspaces.id, id));
+    
+    return workspace;
+  }
+  
+  async getWorkspacesByOrganization(organizationId: number): Promise<Workspace[]> {
+    return db
+      .select()
+      .from(workspaces)
+      .where(eq(workspaces.organizationId, organizationId));
+  }
+  
+  async createWorkspace(data: InsertWorkspace): Promise<Workspace> {
+    const [workspace] = await db
+      .insert(workspaces)
+      .values(data)
+      .returning();
+    
+    return workspace;
+  }
+  
+  // Campus Restaurant methods
+  async getCampusRestaurant(id: number): Promise<CampusRestaurant | undefined> {
+    const [restaurant] = await db
+      .select()
+      .from(campusRestaurants)
+      .where(eq(campusRestaurants.id, id));
+    
+    return restaurant;
+  }
+  
+  async getCampusRestaurantsByOrganization(organizationId: number): Promise<CampusRestaurant[]> {
+    return db
+      .select()
+      .from(campusRestaurants)
+      .where(eq(campusRestaurants.organizationId, organizationId));
+  }
+  
+  async getCampusRestaurantsByWorkspace(workspaceId: number): Promise<CampusRestaurant[]> {
+    return db
+      .select()
+      .from(campusRestaurants)
+      .where(eq(campusRestaurants.workspaceId, workspaceId));
+  }
+  
+  async createCampusRestaurant(data: InsertCampusRestaurant): Promise<CampusRestaurant> {
+    const [restaurant] = await db
+      .insert(campusRestaurants)
+      .values(data)
+      .returning();
+    
+    return restaurant;
+  }
+  
+  // Corporate Event methods
+  async getCorporateEvent(id: number): Promise<CorporateEvent | undefined> {
+    const [event] = await db
+      .select()
+      .from(corporateEvents)
+      .where(eq(corporateEvents.id, id));
+    
+    return event;
+  }
+  
+  async getCorporateEventsByOrganization(organizationId: number): Promise<CorporateEvent[]> {
+    return db
+      .select()
+      .from(corporateEvents)
+      .where(eq(corporateEvents.organizationId, organizationId));
+  }
+  
+  async getCorporateEventsByTeam(teamId: number): Promise<CorporateEvent[]> {
+    return db
+      .select()
+      .from(corporateEvents)
+      .where(eq(corporateEvents.teamId, teamId));
+  }
+  
+  async getUpcomingCorporateEvents(userId: number): Promise<CorporateEvent[]> {
+    // Get the user's organization
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId));
+    
+    if (!user?.organizationId) {
+      return [];
+    }
+    
+    // Get events from the user's organization where the date is in the future
+    return db
+      .select()
+      .from(corporateEvents)
+      .where(
+        and(
+          eq(corporateEvents.organizationId, user.organizationId),
+          gte(corporateEvents.eventDate, sql`CURRENT_DATE`)
+        )
+      )
+      .orderBy(asc(corporateEvents.eventDate));
+  }
+  
+  async createCorporateEvent(data: InsertCorporateEvent): Promise<CorporateEvent> {
+    const [event] = await db
+      .insert(corporateEvents)
+      .values(data)
+      .returning();
+    
+    return event;
   }
   
   // Messaging methods
