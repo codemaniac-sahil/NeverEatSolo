@@ -1,15 +1,17 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, MessageSquare, MapPin } from "lucide-react";
+import { CheckCircle, MessageSquare, MapPin, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
 import CalendarSync from "./calendar-sync";
 import { Invitation, Restaurant, User } from "@shared/schema";
-import { getQueryFn } from "@/lib/queryClient";
+import { apiRequest, getQueryFn, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
 // Toggle this to use mock data
 const DEMO_MODE = true;
@@ -125,7 +127,39 @@ const mockUpcomingMeals: UpcomingMeal[] = [
 
 export default function UpcomingMeals() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [showAll, setShowAll] = useState(false);
+  const [, navigate] = useLocation();
+
+  // Create conversation mutation
+  const createConversationMutation = useMutation({
+    mutationFn: async (otherUserId: number) => {
+      const res = await apiRequest("POST", "/api/conversations", {
+        otherUserId,
+      });
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      navigate("/messages");
+      toast({
+        title: "Conversation started",
+        description: "You can now message your dining partner",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to start conversation",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Start a conversation with a user
+  const startConversation = (otherUserId: number) => {
+    createConversationMutation.mutate(otherUserId);
+  };
 
   // Fetch upcoming meals from API when not in demo mode
   const { data: apiUpcomingMeals = [], isLoading: isApiLoading } = useQuery<UpcomingMeal[]>({
@@ -225,6 +259,7 @@ export default function UpcomingMeals() {
                       variant="secondary" 
                       size="sm" 
                       className="flex-1 gap-1"
+                      onClick={() => startConversation(meal.partner.id)}
                     >
                       <MessageSquare className="h-4 w-4" />
                       Message
@@ -233,6 +268,11 @@ export default function UpcomingMeals() {
                       variant="outline" 
                       size="sm" 
                       className="flex-1 gap-1"
+                      onClick={() => {
+                        if (meal.restaurant?.locationLat && meal.restaurant?.locationLng) {
+                          window.open(`https://maps.google.com/maps?q=${meal.restaurant.locationLat},${meal.restaurant.locationLng}`, '_blank');
+                        }
+                      }}
                     >
                       <MapPin className="h-4 w-4" />
                       Directions

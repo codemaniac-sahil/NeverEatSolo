@@ -36,6 +36,7 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
       params: { otherUserId: conversation.otherUser.id.toString() },
     }),
     enabled: !!user && !!conversation.conversationId,
+    refetchInterval: 5000, // Poll for new messages every 5 seconds
   });
 
   const scrollToBottom = () => {
@@ -150,22 +151,38 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b border-zinc-800 bg-zinc-900 flex items-center">
-        <Avatar className="h-10 w-10 ring-1 ring-zinc-700">
-          <AvatarImage
-            src={conversation.otherUser.profileImage || undefined}
-            alt={conversation.otherUser.name || "User"}
-          />
-          <AvatarFallback className="bg-zinc-800 text-primary">
-            {conversation.otherUser.name?.substring(0, 2).toUpperCase() || "U"}
-          </AvatarFallback>
-        </Avatar>
-        <div className="ml-3">
-          <h3 className="font-light tracking-wide text-zinc-200">{conversation.otherUser.name}</h3>
-          <p className="text-sm text-zinc-400 font-light">
-            {conversation.otherUser.occupation || "No occupation"}
-          </p>
+      <div className="p-4 border-b border-zinc-800 bg-zinc-900 flex justify-between items-center">
+        <div className="flex items-center">
+          <Avatar className="h-10 w-10 ring-1 ring-zinc-700">
+            <AvatarImage
+              src={conversation.otherUser.profileImage || undefined}
+              alt={conversation.otherUser.name || "User"}
+            />
+            <AvatarFallback className="bg-zinc-800 text-primary">
+              {conversation.otherUser.name?.substring(0, 2).toUpperCase() || "U"}
+            </AvatarFallback>
+          </Avatar>
+          <div className="ml-3">
+            <h3 className="font-light tracking-wide text-zinc-200">{conversation.otherUser.name}</h3>
+            <p className="text-sm text-zinc-400 font-light">
+              {conversation.otherUser.occupation || "No occupation"}
+            </p>
+          </div>
         </div>
+        <Button 
+          variant="outline" 
+          size="sm"
+          className="text-xs px-3 py-1 h-auto bg-zinc-800/50 border-zinc-700 hover:bg-primary/10 hover:text-primary hover:border-primary/50"
+          onClick={() => {
+            // Insert a meal suggestion template into the input field
+            if (inputRef.current) {
+              inputRef.current.value = `Would you like to meet for a meal? I was thinking we could try [restaurant name] on [date] at [time]. Let me know if that works for you!`;
+              inputRef.current.focus();
+            }
+          }}
+        >
+          Schedule a Meal
+        </Button>
       </div>
 
       <div className="flex-1 p-6 overflow-y-auto space-y-6 bg-zinc-950/50">
