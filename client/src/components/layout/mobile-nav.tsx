@@ -1,4 +1,5 @@
 import { useLocation, Link } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
 import {
   Home,
   Users,
@@ -8,7 +9,10 @@ import {
   Bookmark,
   Clock,
   Menu,
-  Sparkles
+  Sparkles,
+  Building,
+  Calendar,
+  Coffee
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -20,10 +24,13 @@ import { Button } from "@/components/ui/button";
 
 export default function MobileNav() {
   const [location] = useLocation();
+  const { user } = useAuth();
   
   const isActive = (path: string) => {
     return location === path ? 'text-primary' : 'text-zinc-400';
   };
+  
+  const hasWorkProfile = user?.organizationId && user?.useWorkProfile;
   
   return (
     <div className="md:hidden bg-zinc-900/95 backdrop-blur-md shadow-xl border-t border-zinc-800 fixed bottom-0 left-0 right-0 z-40">
@@ -123,6 +130,37 @@ export default function MobileNav() {
                 </div>
               </Link>
             </DropdownMenuItem>
+            
+            {user?.organizationId && (
+              <>
+                <DropdownMenuItem asChild>
+                  <Link href="/team-circles">
+                    <div className="flex items-center">
+                      <Users className="h-4 w-4 mr-2" />
+                      <span>Team Circles</span>
+                    </div>
+                  </Link>
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem asChild>
+                  <Link href="/campus-restaurants">
+                    <div className="flex items-center">
+                      <Coffee className="h-4 w-4 mr-2" />
+                      <span>Campus Dining</span>
+                    </div>
+                  </Link>
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem asChild>
+                  <Link href="/corporate-events">
+                    <div className="flex items-center">
+                      <Calendar className="h-4 w-4 mr-2" />
+                      <span>Events</span>
+                    </div>
+                  </Link>
+                </DropdownMenuItem>
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

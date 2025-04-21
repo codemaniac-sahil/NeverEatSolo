@@ -98,7 +98,7 @@ export default function CampusRestaurantsPage() {
 
   // Get unique cuisine types for filter
   const cuisineTypes = restaurants 
-    ? Array.from(new Set(restaurants.map(r => r.cuisine)))
+    ? Array.from(new Set<string>(restaurants.map(r => r.cuisine)))
     : [];
 
   // Loading state

@@ -2,6 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
+import { ZodError } from "zod";
+import { fromZodError } from "zod-validation-error";
 import { 
   insertRestaurantSchema, 
   insertInvitationSchema, 
@@ -24,8 +26,6 @@ import {
   insertCorporateEventSchema,
   insertEventParticipantSchema
 } from "@shared/schema";
-import { ZodError } from "zod";
-import { fromZodError } from "zod-validation-error";
 import { nanoid } from "nanoid";
 
 export async function registerRoutes(app: Express): Promise<Server> {
