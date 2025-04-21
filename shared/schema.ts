@@ -200,6 +200,31 @@ export const conversationsRelations = relations(conversations, ({ one, many }) =
   messages: many(messages),
 }));
 
+// Relations for new models
+export const friendsRelations = relations(friends, ({ one }) => ({
+  user: one(users, { relationName: "sentFriendRequests", fields: [friends.userId], references: [users.id] }),
+  friend: one(users, { relationName: "receivedFriendRequests", fields: [friends.friendId], references: [users.id] }),
+}));
+
+export const diningCirclesRelations = relations(diningCircles, ({ one, many }) => ({
+  creator: one(users, { relationName: "circleCreator", fields: [diningCircles.createdBy], references: [users.id] }),
+  members: many(diningCircleMembers),
+}));
+
+export const diningCircleMembersRelations = relations(diningCircleMembers, ({ one }) => ({
+  diningCircle: one(diningCircles, { fields: [diningCircleMembers.diningCircleId], references: [diningCircles.id] }),
+  user: one(users, { relationName: "circleMember", fields: [diningCircleMembers.userId], references: [users.id] }),
+}));
+
+export const userAvailabilitiesRelations = relations(userAvailabilities, ({ one }) => ({
+  user: one(users, { fields: [userAvailabilities.userId], references: [users.id] }),
+}));
+
+export const restaurantRecommendationsRelations = relations(restaurantRecommendations, ({ one }) => ({
+  user: one(users, { fields: [restaurantRecommendations.userId], references: [users.id] }),
+  restaurant: one(restaurants, { fields: [restaurantRecommendations.restaurantId], references: [restaurants.id] }),
+}));
+
 // Define Zod schemas for validation
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -243,6 +268,32 @@ export const insertSavedRestaurantSchema = createInsertSchema(savedRestaurants).
   createdAt: true,
 });
 
+// Insert schemas for new models
+export const insertFriendSchema = createInsertSchema(friends).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertDiningCircleSchema = createInsertSchema(diningCircles).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertDiningCircleMemberSchema = createInsertSchema(diningCircleMembers).omit({
+  joinedAt: true,
+});
+
+export const insertUserAvailabilitySchema = createInsertSchema(userAvailabilities).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertRestaurantRecommendationSchema = createInsertSchema(restaurantRecommendations).omit({
+  id: true,
+  createdAt: true,
+  viewedAt: true,
+});
+
 // Login schema
 export const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -263,3 +314,15 @@ export type Message = typeof messages.$inferSelect;
 export type Conversation = typeof conversations.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type InsertConversation = z.infer<typeof insertConversationSchema>;
+
+// Types for new models
+export type Friend = typeof friends.$inferSelect;
+export type InsertFriend = z.infer<typeof insertFriendSchema>;
+export type DiningCircle = typeof diningCircles.$inferSelect;
+export type InsertDiningCircle = z.infer<typeof insertDiningCircleSchema>;
+export type DiningCircleMember = typeof diningCircleMembers.$inferSelect;
+export type InsertDiningCircleMember = z.infer<typeof insertDiningCircleMemberSchema>;
+export type UserAvailability = typeof userAvailabilities.$inferSelect;
+export type InsertUserAvailability = z.infer<typeof insertUserAvailabilitySchema>;
+export type RestaurantRecommendation = typeof restaurantRecommendations.$inferSelect;
+export type InsertRestaurantRecommendation = z.infer<typeof insertRestaurantRecommendationSchema>;

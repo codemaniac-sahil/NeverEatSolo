@@ -75,6 +75,43 @@ export interface IStorage {
   getUsersWithSavedRestaurant(restaurantId: number): Promise<User[]>;
   getRestaurantOverlap(userId: number, otherUserId: number): Promise<{ restaurants: Restaurant[], count: number }>;
   
+  // Friend operations
+  getFriend(id: number): Promise<Friend | undefined>;
+  getFriendshipByUsers(userId: number, friendId: number): Promise<Friend | undefined>;
+  getUserFriends(userId: number): Promise<(Friend & { friend: User })[]>;
+  getUserFriendRequests(userId: number): Promise<(Friend & { user: User })[]>;
+  createFriend(friend: InsertFriend): Promise<Friend>;
+  updateFriendStatus(id: number, status: string): Promise<Friend | undefined>;
+  deleteFriend(id: number): Promise<boolean>;
+  
+  // Dining Circle operations
+  getDiningCircle(id: number): Promise<DiningCircle | undefined>;
+  getUserDiningCircles(userId: number): Promise<(DiningCircle & { memberCount: number })[]>;
+  createDiningCircle(diningCircle: InsertDiningCircle): Promise<DiningCircle>;
+  updateDiningCircle(id: number, data: Partial<DiningCircle>): Promise<DiningCircle | undefined>;
+  deleteDiningCircle(id: number): Promise<boolean>;
+  getDiningCircleMembers(diningCircleId: number): Promise<(DiningCircleMember & { user: User })[]>;
+  addDiningCircleMember(member: InsertDiningCircleMember): Promise<DiningCircleMember>;
+  removeDiningCircleMember(diningCircleId: number, userId: number): Promise<boolean>;
+  updateDiningCircleMemberRole(diningCircleId: number, userId: number, role: string): Promise<DiningCircleMember | undefined>;
+  
+  // User Availability operations
+  getUserAvailability(id: number): Promise<UserAvailability | undefined>;
+  getCurrentUserAvailability(userId: number): Promise<UserAvailability | undefined>;
+  getUserAvailabilities(userId: number): Promise<UserAvailability[]>;
+  getAvailableUsersNearby(lat: string, lng: string, radius: number): Promise<(UserAvailability & { user: User })[]>;
+  createUserAvailability(availability: InsertUserAvailability): Promise<UserAvailability>;
+  updateUserAvailability(id: number, data: Partial<UserAvailability>): Promise<UserAvailability | undefined>;
+  deleteUserAvailability(id: number): Promise<boolean>;
+  
+  // Restaurant Recommendation operations
+  getRestaurantRecommendation(id: number): Promise<RestaurantRecommendation | undefined>;
+  getUserRecommendations(userId: number): Promise<(RestaurantRecommendation & { restaurant: Restaurant })[]>;
+  createRestaurantRecommendation(recommendation: InsertRestaurantRecommendation): Promise<RestaurantRecommendation>;
+  markRecommendationAsViewed(id: number): Promise<RestaurantRecommendation | undefined>;
+  deleteRestaurantRecommendation(id: number): Promise<boolean>;
+  generateRecommendationsForUser(userId: number): Promise<RestaurantRecommendation[]>;
+  
   // Session store
   sessionStore: session.Store;
 }
