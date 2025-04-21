@@ -28,7 +28,9 @@ import {
   Lock, 
   Map, 
   Moon, 
-  Sun
+  Sun,
+  Briefcase,
+  Building
 } from 'lucide-react';
 import { UserSettings } from '@shared/schema';
 
@@ -311,6 +313,72 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Corporate Profile */}
+        {user?.organizationId && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center">
+                <Building className="h-5 w-5 mr-2" />
+                <CardTitle>Corporate Profile</CardTitle>
+              </div>
+              <CardDescription>
+                Configure your work profile settings
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="useWorkProfile" className="flex-1 mb-1 block">Use Work Profile</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Switch between your personal and work profiles
+                  </p>
+                </div>
+                <Switch 
+                  id="useWorkProfile" 
+                  checked={user?.useWorkProfile ?? false}
+                  onCheckedChange={(checked) => {
+                    // Call API to toggle work profile
+                    fetch('/api/user/toggle-work-profile', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({ useWorkProfile: checked }),
+                    }).then(res => {
+                      if (res.ok) {
+                        // Refresh the user data
+                        window.location.reload();
+                      }
+                    });
+                  }}
+                  disabled={isUpdating}
+                />
+              </div>
+
+              <div className="pt-2">
+                <div className="bg-muted p-3 rounded-md">
+                  <div className="flex items-center mb-2">
+                    <Briefcase className="h-4 w-4 mr-2 text-primary" />
+                    <span className="font-medium">Current Profile:</span>
+                    <span className="ml-2 px-2 py-1 bg-primary/20 text-primary rounded text-xs font-medium">
+                      {user?.useWorkProfile ? 'Work' : 'Personal'}
+                    </span>
+                  </div>
+                  {user?.useWorkProfile ? (
+                    <p className="text-sm text-muted-foreground">
+                      You're using your work profile. You'll see team members, campus restaurants, and work-related recommendations.
+                    </p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      You're using your personal profile. Switch to work profile to see team members, campus restaurants, and work-related recommendations.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Appearance */}
         <Card>

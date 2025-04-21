@@ -15,6 +15,9 @@ import DiningCirclesPage from "@/pages/dining-circles-page";
 import RecommendationsPage from "@/pages/recommendations-page";
 import AvailabilityPage from "@/pages/availability-page";
 import SettingsPage from "@/pages/settings-page";
+import TeamCirclesPage from "@/pages/team-circles-page";
+import CampusRestaurantsPage from "@/pages/campus-restaurants-page";
+import CorporateEventsPage from "@/pages/corporate-events-page";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "./hooks/use-auth";
 
@@ -33,6 +36,9 @@ function Router() {
       <ProtectedRoute path="/recommendations" component={RecommendationsPage} />
       <ProtectedRoute path="/availability" component={AvailabilityPage} />
       <ProtectedRoute path="/settings" component={SettingsPage} />
+      <ProtectedRoute path="/team-circles" component={TeamCirclesPage} />
+      <ProtectedRoute path="/campus-restaurants" component={CampusRestaurantsPage} />
+      <ProtectedRoute path="/corporate-events" component={CorporateEventsPage} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>
