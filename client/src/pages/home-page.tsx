@@ -5,13 +5,14 @@ import SiteHeader from "@/components/layout/site-header";
 import MobileNav from "@/components/layout/mobile-nav";
 import NearbyUsers from "@/components/dining/nearby-users-new";
 import NearbyRestaurants from "@/components/dining/nearby-restaurants";
+import SavedRestaurants from "@/components/dining/saved-restaurants";
 import UpcomingMeals from "@/components/dining/upcoming-meals";
 import ProfileCompletion from "@/components/profile/profile-completion";
 import InviteModal from "@/components/dining/invite-modal";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { CalendarPlus, Utensils } from "lucide-react";
+import { CalendarPlus, Utensils, Bookmark } from "lucide-react";
 import { User } from "@shared/schema";
 
 import JoinMeModal from "@/components/dining/join-me";
@@ -167,6 +168,21 @@ export default function HomePage() {
               </div>
               <div className="elegant-card p-6">
                 <NearbyRestaurants />
+              </div>
+            </section>
+            
+            <section>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-light tracking-wide text-zinc-100">
+                  <span className="text-primary border-l-2 border-primary pl-3 italic">Your</span> Saved Restaurants
+                </h2>
+                <Button variant="ghost" className="font-light text-sm uppercase tracking-wider text-primary hover:bg-primary/5 flex items-center gap-1">
+                  <Bookmark className="h-4 w-4" />
+                  Manage
+                </Button>
+              </div>
+              <div className="elegant-card p-6">
+                <SavedRestaurants />
               </div>
             </section>
           </div>

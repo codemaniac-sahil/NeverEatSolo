@@ -1,5 +1,5 @@
 import { useLocation, Link } from "wouter";
-import { Home, Users, MessageSquare, Utensils, User } from "lucide-react";
+import { Home, Users, MessageSquare, Utensils, User, Bookmark } from "lucide-react";
 
 export default function MobileNav() {
   const [location] = useLocation();
@@ -40,6 +40,15 @@ export default function MobileNav() {
           }`}>
             <Utensils className="h-5 w-5" />
             <span className="text-xs mt-1 font-light tracking-wide">Dining</span>
+          </a>
+        </Link>
+
+        <Link href="/saved">
+          <a className={`flex flex-col items-center py-3 px-4 ${
+            location === '/saved' ? 'text-primary' : 'text-zinc-400'
+          }`}>
+            <Bookmark className="h-5 w-5" />
+            <span className="text-xs mt-1 font-light tracking-wide">Saved</span>
           </a>
         </Link>
         
