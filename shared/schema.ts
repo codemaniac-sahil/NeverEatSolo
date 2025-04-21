@@ -43,6 +43,10 @@ export const restaurants = pgTable("restaurants", {
   rating: text("rating"),
   image: text("image"),
   activeUserCount: integer("active_user_count").default(0),
+  googlePlaceId: text("google_place_id"),
+  website: text("website"),
+  phoneNumber: text("phone_number"),
+  openingHours: json("opening_hours").$type<string[]>().default([]),
 });
 
 // Meal invitations model
@@ -82,6 +86,17 @@ export const conversations = pgTable("conversations", {
   lastMessageAt: timestamp("last_message_at").notNull().defaultNow(),
 });
 
+// Saved restaurants model (for users to save restaurants they want to visit)
+export const savedRestaurants = pgTable("saved_restaurants", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  restaurantId: integer("restaurant_id").notNull().references(() => restaurants.id),
+  isPublic: boolean("is_public").default(true).notNull(), // Whether this saved restaurant is visible to other users
+  notes: text("notes"),
+  priority: integer("priority").default(0), // Users can prioritize restaurants they want to visit
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Define relations
 export const usersRelations = relations(users, ({ many }) => ({
   sentInvitations: many(invitations, { relationName: "sentInvitations" }),
@@ -90,10 +105,17 @@ export const usersRelations = relations(users, ({ many }) => ({
   receivedMessages: many(messages, { relationName: "receivedMessages" }),
   conversations1: many(conversations, { relationName: "userConversations1" }),
   conversations2: many(conversations, { relationName: "userConversations2" }),
+  savedRestaurants: many(savedRestaurants),
 }));
 
 export const restaurantsRelations = relations(restaurants, ({ many }) => ({
   invitations: many(invitations),
+  savedBy: many(savedRestaurants),
+}));
+
+export const savedRestaurantsRelations = relations(savedRestaurants, ({ one }) => ({
+  user: one(users, { fields: [savedRestaurants.userId], references: [users.id] }),
+  restaurant: one(restaurants, { fields: [savedRestaurants.restaurantId], references: [restaurants.id] }),
 }));
 
 export const invitationsRelations = relations(invitations, ({ one }) => ({
@@ -151,6 +173,11 @@ export const insertConversationSchema = createInsertSchema(conversations).omit({
   lastMessageAt: true,
 });
 
+export const insertSavedRestaurantSchema = createInsertSchema(savedRestaurants).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Login schema
 export const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -162,8 +189,10 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Restaurant = typeof restaurants.$inferSelect;
 export type Invitation = typeof invitations.$inferSelect;
+export type SavedRestaurant = typeof savedRestaurants.$inferSelect;
 export type InsertRestaurant = z.infer<typeof insertRestaurantSchema>;
 export type InsertInvitation = z.infer<typeof insertInvitationSchema>;
+export type InsertSavedRestaurant = z.infer<typeof insertSavedRestaurantSchema>;
 export type LoginData = z.infer<typeof loginSchema>;
 export type Message = typeof messages.$inferSelect;
 export type Conversation = typeof conversations.$inferSelect;

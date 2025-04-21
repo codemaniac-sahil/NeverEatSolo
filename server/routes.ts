@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
-import { insertRestaurantSchema, insertInvitationSchema, insertMessageSchema, insertConversationSchema } from "@shared/schema";
+import { insertRestaurantSchema, insertInvitationSchema, insertMessageSchema, insertConversationSchema, insertSavedRestaurantSchema } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { nanoid } from "nanoid";
@@ -404,6 +404,179 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Error sending message:", err);
       res.status(500).json({ message: "Failed to send message" });
+    }
+  });
+
+  // Saved Restaurants routes
+  app.get("/api/saved-restaurants", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const savedRestaurants = await storage.getUserSavedRestaurants(req.user.id);
+      res.json(savedRestaurants);
+    } catch (err) {
+      console.error("Error fetching saved restaurants:", err);
+      res.status(500).json({ message: "Failed to fetch saved restaurants" });
+    }
+  });
+
+  app.post("/api/saved-restaurants", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const { restaurantId, isPublic = true, notes, priority = 0 } = req.body;
+      
+      if (!restaurantId) {
+        return res.status(400).json({ message: "Restaurant ID is required" });
+      }
+
+      // Check if restaurant exists
+      const restaurant = await storage.getRestaurant(parseInt(restaurantId));
+      if (!restaurant) {
+        return res.status(404).json({ message: "Restaurant not found" });
+      }
+
+      // Check if user has already saved this restaurant
+      const existing = await storage.getSavedRestaurantByUserAndRestaurant(
+        req.user.id, 
+        parseInt(restaurantId)
+      );
+
+      if (existing) {
+        return res.status(409).json({ 
+          message: "Restaurant already saved", 
+          savedRestaurant: existing 
+        });
+      }
+      
+      // Validate data
+      const validatedData = insertSavedRestaurantSchema.parse({
+        userId: req.user.id,
+        restaurantId: parseInt(restaurantId),
+        isPublic,
+        notes,
+        priority
+      });
+      
+      // Save restaurant
+      const savedRestaurant = await storage.createSavedRestaurant(validatedData);
+      res.status(201).json(savedRestaurant);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        const validationError = fromZodError(err);
+        return res.status(400).json({ message: validationError.message });
+      }
+      console.error("Error saving restaurant:", err);
+      res.status(500).json({ message: "Failed to save restaurant" });
+    }
+  });
+
+  app.patch("/api/saved-restaurants/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const { id } = req.params;
+      const { isPublic, notes, priority } = req.body;
+      
+      // Get the saved restaurant
+      const savedRestaurant = await storage.getSavedRestaurant(parseInt(id));
+      if (!savedRestaurant) {
+        return res.status(404).json({ message: "Saved restaurant not found" });
+      }
+
+      // Check if user owns this saved restaurant
+      if (savedRestaurant.userId !== req.user.id) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      // Update the saved restaurant
+      const updateData: any = {};
+      if (isPublic !== undefined) updateData.isPublic = isPublic;
+      if (notes !== undefined) updateData.notes = notes;
+      if (priority !== undefined) updateData.priority = priority;
+
+      const updatedSavedRestaurant = await storage.updateSavedRestaurant(parseInt(id), updateData);
+      res.json(updatedSavedRestaurant);
+    } catch (err) {
+      console.error("Error updating saved restaurant:", err);
+      res.status(500).json({ message: "Failed to update saved restaurant" });
+    }
+  });
+
+  app.delete("/api/saved-restaurants/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const { id } = req.params;
+      
+      // Get the saved restaurant
+      const savedRestaurant = await storage.getSavedRestaurant(parseInt(id));
+      if (!savedRestaurant) {
+        return res.status(404).json({ message: "Saved restaurant not found" });
+      }
+
+      // Check if user owns this saved restaurant
+      if (savedRestaurant.userId !== req.user.id) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      // Delete the saved restaurant
+      await storage.deleteSavedRestaurant(parseInt(id));
+      res.status(204).end();
+    } catch (err) {
+      console.error("Error deleting saved restaurant:", err);
+      res.status(500).json({ message: "Failed to delete saved restaurant" });
+    }
+  });
+
+  // Get users who have saved a specific restaurant
+  app.get("/api/restaurants/:id/saved-by", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const { id } = req.params;
+      
+      // Check if restaurant exists
+      const restaurant = await storage.getRestaurant(parseInt(id));
+      if (!restaurant) {
+        return res.status(404).json({ message: "Restaurant not found" });
+      }
+
+      // Get users who have saved this restaurant publicly
+      const users = await storage.getUsersWithSavedRestaurant(parseInt(id));
+      
+      // Don't return passwords
+      const sanitizedUsers = users.map(user => {
+        const { password, ...rest } = user;
+        return rest;
+      });
+      
+      res.json(sanitizedUsers);
+    } catch (err) {
+      console.error("Error fetching users who saved restaurant:", err);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  // Get restaurant overlap between current user and another user
+  app.get("/api/users/:id/restaurant-overlap", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const { id } = req.params;
+      
+      // Check if other user exists
+      const otherUser = await storage.getUser(parseInt(id));
+      if (!otherUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Get restaurant overlap
+      const overlap = await storage.getRestaurantOverlap(req.user.id, parseInt(id));
+      res.json(overlap);
+    } catch (err) {
+      console.error("Error fetching restaurant overlap:", err);
+      res.status(500).json({ message: "Failed to fetch restaurant overlap" });
     }
   });
 

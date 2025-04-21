@@ -13,11 +13,20 @@ import {
   Clock,
   ArrowUpDown,
   ChefHat,
-  X
+  X,
+  Bookmark,
+  BookmarkCheck
 } from "lucide-react";
 import { Restaurant } from "@shared/schema";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import {
   Select,
   SelectContent,
@@ -30,6 +39,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Sheet,
   SheetClose,
@@ -39,6 +49,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { CUISINE_PREFERENCES } from "@shared/constants";
+import { useSavedRestaurants } from "@/hooks/use-saved-restaurants";
+import { useToast } from "@/hooks/use-toast";
 
 // Toggle this to use mock data
 const DEMO_MODE = true;

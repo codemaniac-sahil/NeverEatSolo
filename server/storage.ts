@@ -3,7 +3,8 @@ import {
   restaurants, type Restaurant, type InsertRestaurant, 
   invitations, type Invitation, type InsertInvitation,
   messages, type Message, type InsertMessage,
-  conversations, type Conversation, type InsertConversation
+  conversations, type Conversation, type InsertConversation,
+  savedRestaurants, type SavedRestaurant, type InsertSavedRestaurant
 } from "@shared/schema";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -14,7 +15,7 @@ import { pool } from "./db";
 // @ts-ignore - Type definition issue with connect-pg-simple
 const PostgresSessionStore = connectPg(session);
 
-// Storage interface - Keep the same
+// Storage interface
 export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
@@ -63,6 +64,16 @@ export interface IStorage {
   markMessagesAsRead(conversationId: string, userId: number): Promise<void>;
 
   getUnreadCount(userId: number): Promise<number>;
+  
+  // Saved Restaurants operations
+  getSavedRestaurant(id: number): Promise<SavedRestaurant | undefined>;
+  getSavedRestaurantByUserAndRestaurant(userId: number, restaurantId: number): Promise<SavedRestaurant | undefined>;
+  getUserSavedRestaurants(userId: number): Promise<(SavedRestaurant & { restaurant: Restaurant })[]>;
+  createSavedRestaurant(savedRestaurant: InsertSavedRestaurant): Promise<SavedRestaurant>;
+  updateSavedRestaurant(id: number, data: Partial<SavedRestaurant>): Promise<SavedRestaurant | undefined>;
+  deleteSavedRestaurant(id: number): Promise<boolean>;
+  getUsersWithSavedRestaurant(restaurantId: number): Promise<User[]>;
+  getRestaurantOverlap(userId: number, otherUserId: number): Promise<{ restaurants: Restaurant[], count: number }>;
   
   // Session store
   sessionStore: session.Store;
@@ -226,6 +237,146 @@ export class DatabaseStorage implements IStorage {
       );
       
     return result[0]?.count || 0;
+  }
+
+  // Saved Restaurants methods
+  async getSavedRestaurant(id: number): Promise<SavedRestaurant | undefined> {
+    const [savedRestaurant] = await db
+      .select()
+      .from(savedRestaurants)
+      .where(eq(savedRestaurants.id, id));
+    return savedRestaurant;
+  }
+  
+  async getSavedRestaurantByUserAndRestaurant(userId: number, restaurantId: number): Promise<SavedRestaurant | undefined> {
+    const [savedRestaurant] = await db
+      .select()
+      .from(savedRestaurants)
+      .where(
+        and(
+          eq(savedRestaurants.userId, userId),
+          eq(savedRestaurants.restaurantId, restaurantId)
+        )
+      );
+    return savedRestaurant;
+  }
+  
+  async getUserSavedRestaurants(userId: number): Promise<(SavedRestaurant & { restaurant: Restaurant })[]> {
+    const savedRestaurantsList = await db
+      .select()
+      .from(savedRestaurants)
+      .where(eq(savedRestaurants.userId, userId))
+      .orderBy(desc(savedRestaurants.priority), desc(savedRestaurants.createdAt));
+    
+    const result: (SavedRestaurant & { restaurant: Restaurant })[] = [];
+    
+    for (const savedRestaurant of savedRestaurantsList) {
+      const [restaurant] = await db
+        .select()
+        .from(restaurants)
+        .where(eq(restaurants.id, savedRestaurant.restaurantId));
+        
+      if (restaurant) {
+        result.push({
+          ...savedRestaurant,
+          restaurant
+        });
+      }
+    }
+    
+    return result;
+  }
+  
+  async createSavedRestaurant(insertSavedRestaurant: InsertSavedRestaurant): Promise<SavedRestaurant> {
+    const [savedRestaurant] = await db
+      .insert(savedRestaurants)
+      .values(insertSavedRestaurant)
+      .returning();
+    return savedRestaurant;
+  }
+  
+  async updateSavedRestaurant(id: number, data: Partial<SavedRestaurant>): Promise<SavedRestaurant | undefined> {
+    const [updatedSavedRestaurant] = await db
+      .update(savedRestaurants)
+      .set(data)
+      .where(eq(savedRestaurants.id, id))
+      .returning();
+    return updatedSavedRestaurant;
+  }
+  
+  async deleteSavedRestaurant(id: number): Promise<boolean> {
+    const result = await db
+      .delete(savedRestaurants)
+      .where(eq(savedRestaurants.id, id))
+      .returning();
+    return result.length > 0;
+  }
+  
+  async getUsersWithSavedRestaurant(restaurantId: number): Promise<User[]> {
+    const publicSavedRestaurants = await db
+      .select()
+      .from(savedRestaurants)
+      .where(
+        and(
+          eq(savedRestaurants.restaurantId, restaurantId),
+          eq(savedRestaurants.isPublic, true)
+        )
+      );
+    
+    const userIds = publicSavedRestaurants.map(saved => saved.userId);
+    
+    if (userIds.length === 0) {
+      return [];
+    }
+    
+    // Get users who have saved this restaurant publicly
+    return await db
+      .select()
+      .from(users)
+      .where(
+        sql`${users.id} IN (${userIds.join(',')})`
+      );
+  }
+  
+  async getRestaurantOverlap(userId: number, otherUserId: number): Promise<{ restaurants: Restaurant[], count: number }> {
+    // Get all restaurants saved by the current user
+    const userSavedRestaurants = await db
+      .select()
+      .from(savedRestaurants)
+      .where(eq(savedRestaurants.userId, userId));
+    
+    // Get all publicly saved restaurants by the other user
+    const otherUserSavedRestaurants = await db
+      .select()
+      .from(savedRestaurants)
+      .where(
+        and(
+          eq(savedRestaurants.userId, otherUserId),
+          eq(savedRestaurants.isPublic, true)
+        )
+      );
+    
+    // Find the overlap of restaurant IDs
+    const userRestaurantIds = userSavedRestaurants.map(saved => saved.restaurantId);
+    const otherUserRestaurantIds = otherUserSavedRestaurants.map(saved => saved.restaurantId);
+    const overlapIds = userRestaurantIds.filter(id => otherUserRestaurantIds.includes(id));
+    
+    if (overlapIds.length === 0) {
+      return { restaurants: [], count: 0 };
+    }
+    
+    // Get the detailed restaurant information for the overlapping IDs
+    const overlapRestaurants = await db
+      .select()
+      .from(restaurants)
+      .where(
+        sql`${restaurants.id} IN (${overlapIds.join(',')})`
+      );
+    
+    return {
+      restaurants: overlapRestaurants,
+      count: overlapIds.length
+    };
   }
 
   private async seedInitialData() {
@@ -423,36 +574,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUpcomingMeals(userId: number): Promise<(Invitation & { restaurant: Restaurant, partner: User })[]> {
-    // This is more complex and requires multiple queries
-    const invitationsList = await db
-      .select()
-      .from(invitations)
-      .where(
-        and(
-          or(
-            eq(invitations.senderId, userId),
-            eq(invitations.receiverId, userId)
-          ),
-          eq(invitations.status, "accepted"),
-          gte(invitations.date, new Date())
-        )
-      )
-      .orderBy(invitations.date);
+    // Get all invitations for this user
+    const userInvitations = await this.getInvitationsForUser(userId);
     
-    // Now we need to get restaurant and partner data for each invitation
+    // For each invitation, get the restaurant and partner details
     const result: (Invitation & { restaurant: Restaurant, partner: User })[] = [];
     
-    for (const invitation of invitationsList) {
-      const [restaurant] = await db
-        .select()
-        .from(restaurants)
-        .where(eq(restaurants.id, invitation.restaurantId));
+    for (const invitation of userInvitations) {
+      const restaurant = await this.getRestaurant(invitation.restaurantId);
       
+      // Determine who is the partner (the other user)
       const partnerId = invitation.senderId === userId ? invitation.receiverId : invitation.senderId;
-      const [partner] = await db
-        .select()
-        .from(users)
-        .where(eq(users.id, partnerId));
+      const partner = await this.getUser(partnerId);
       
       if (restaurant && partner) {
         result.push({
