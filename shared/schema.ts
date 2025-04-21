@@ -154,8 +154,46 @@ export const restaurantRecommendations = pgTable("restaurant_recommendations", {
   viewedAt: timestamp("viewed_at"),
 });
 
+// Notifications
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  type: text("type").notNull(), // message, friend_request, invitation, availability, recommendation, etc.
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  isRead: boolean("is_read").default(false).notNull(),
+  relatedId: integer("related_id"), // ID related to the notification (e.g., messageId, friendId)
+  relatedType: text("related_type"), // Type of the related object (e.g., message, friend_request)
+  linkUrl: text("link_url"), // URL to navigate to when clicking the notification
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// User Settings
+export const userSettings = pgTable("user_settings", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id).unique(),
+  theme: text("theme").default("dark").notNull(), // light, dark, system
+  notificationPreferences: json("notification_preferences").default({
+    messages: true,
+    friendRequests: true,
+    invitations: true,
+    mealReminders: true,
+    recommendations: true,
+    nearbyUsers: true,
+  }),
+  privacySettings: json("privacy_settings").default({
+    profileVisibility: "public", // public, friends, private
+    locationVisibility: "friends", // public, friends, private
+    availabilityVisibility: "friends", // public, friends, private
+    savedRestaurantsVisibility: "friends", // public, friends, private
+  }),
+  searchRadius: integer("search_radius").default(10).notNull(), // in kilometers
+  customUI: json("custom_ui").default({}),
+  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+});
+
 // Define relations
-export const usersRelations = relations(users, ({ many }) => ({
+export const usersRelations = relations(users, ({ many, one }) => ({
   sentInvitations: many(invitations, { relationName: "sentInvitations" }),
   receivedInvitations: many(invitations, { relationName: "receivedInvitations" }),
   sentMessages: many(messages, { relationName: "sentMessages" }),
@@ -170,6 +208,9 @@ export const usersRelations = relations(users, ({ many }) => ({
   circlesMemberships: many(diningCircleMembers, { relationName: "circleMember" }),
   availabilities: many(userAvailabilities),
   recommendations: many(restaurantRecommendations),
+  // Additional relations for new features
+  notifications: many(notifications),
+  settings: one(userSettings),
 }));
 
 export const restaurantsRelations = relations(restaurants, ({ many }) => ({
@@ -223,6 +264,15 @@ export const userAvailabilitiesRelations = relations(userAvailabilities, ({ one 
 export const restaurantRecommendationsRelations = relations(restaurantRecommendations, ({ one }) => ({
   user: one(users, { fields: [restaurantRecommendations.userId], references: [users.id] }),
   restaurant: one(restaurants, { fields: [restaurantRecommendations.restaurantId], references: [restaurants.id] }),
+}));
+
+// Relations for notification and user settings
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, { fields: [notifications.userId], references: [users.id] }),
+}));
+
+export const userSettingsRelations = relations(userSettings, ({ one }) => ({
+  user: one(users, { fields: [userSettings.userId], references: [users.id] }),
 }));
 
 // Define Zod schemas for validation
@@ -326,3 +376,21 @@ export type UserAvailability = typeof userAvailabilities.$inferSelect;
 export type InsertUserAvailability = z.infer<typeof insertUserAvailabilitySchema>;
 export type RestaurantRecommendation = typeof restaurantRecommendations.$inferSelect;
 export type InsertRestaurantRecommendation = z.infer<typeof insertRestaurantRecommendationSchema>;
+
+// Schemas for notifications and user settings
+export const insertNotificationSchema = createInsertSchema(notifications).omit({
+  id: true,
+  createdAt: true,
+  isRead: true,
+});
+
+export const insertUserSettingsSchema = createInsertSchema(userSettings).omit({
+  id: true,
+  lastUpdated: true,
+});
+
+// Types for notifications and user settings
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type UserSettings = typeof userSettings.$inferSelect;
+export type InsertUserSettings = z.infer<typeof insertUserSettingsSchema>;
