@@ -62,10 +62,34 @@ export const invitations = pgTable("invitations", {
   lastCalendarSync: timestamp("last_calendar_sync"),
 });
 
+// Messages model
+export const messages = pgTable("messages", {
+  id: serial("id").primaryKey(),
+  senderId: integer("sender_id").notNull().references(() => users.id),
+  receiverId: integer("receiver_id").notNull().references(() => users.id),
+  content: text("content").notNull(),
+  isRead: boolean("is_read").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  conversationId: text("conversation_id").notNull(),
+});
+
+// Conversations model (to group messages between two users)
+export const conversations = pgTable("conversations", {
+  id: serial("id").primaryKey(),
+  conversationId: text("conversation_id").notNull().unique(),
+  user1Id: integer("user1_id").notNull().references(() => users.id),
+  user2Id: integer("user2_id").notNull().references(() => users.id),
+  lastMessageAt: timestamp("last_message_at").notNull().defaultNow(),
+});
+
 // Define relations
 export const usersRelations = relations(users, ({ many }) => ({
   sentInvitations: many(invitations, { relationName: "sentInvitations" }),
   receivedInvitations: many(invitations, { relationName: "receivedInvitations" }),
+  sentMessages: many(messages, { relationName: "sentMessages" }),
+  receivedMessages: many(messages, { relationName: "receivedMessages" }),
+  conversations1: many(conversations, { relationName: "userConversations1" }),
+  conversations2: many(conversations, { relationName: "userConversations2" }),
 }));
 
 export const restaurantsRelations = relations(restaurants, ({ many }) => ({
@@ -76,6 +100,17 @@ export const invitationsRelations = relations(invitations, ({ one }) => ({
   sender: one(users, { relationName: "sentInvitations", fields: [invitations.senderId], references: [users.id] }),
   receiver: one(users, { relationName: "receivedInvitations", fields: [invitations.receiverId], references: [users.id] }),
   restaurant: one(restaurants, { fields: [invitations.restaurantId], references: [restaurants.id] }),
+}));
+
+export const messagesRelations = relations(messages, ({ one }) => ({
+  sender: one(users, { relationName: "sentMessages", fields: [messages.senderId], references: [users.id] }),
+  receiver: one(users, { relationName: "receivedMessages", fields: [messages.receiverId], references: [users.id] }),
+}));
+
+export const conversationsRelations = relations(conversations, ({ one, many }) => ({
+  user1: one(users, { relationName: "userConversations1", fields: [conversations.user1Id], references: [users.id] }),
+  user2: one(users, { relationName: "userConversations2", fields: [conversations.user2Id], references: [users.id] }),
+  messages: many(messages),
 }));
 
 // Define Zod schemas for validation
@@ -105,6 +140,17 @@ export const insertInvitationSchema = createInsertSchema(invitations).omit({
   lastCalendarSync: true,
 });
 
+export const insertMessageSchema = createInsertSchema(messages).omit({
+  id: true,
+  isRead: true,
+  createdAt: true,
+});
+
+export const insertConversationSchema = createInsertSchema(conversations).omit({
+  id: true,
+  lastMessageAt: true,
+});
+
 // Login schema
 export const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -119,3 +165,7 @@ export type Invitation = typeof invitations.$inferSelect;
 export type InsertRestaurant = z.infer<typeof insertRestaurantSchema>;
 export type InsertInvitation = z.infer<typeof insertInvitationSchema>;
 export type LoginData = z.infer<typeof loginSchema>;
+export type Message = typeof messages.$inferSelect;
+export type Conversation = typeof conversations.$inferSelect;
+export type InsertMessage = z.infer<typeof insertMessageSchema>;
+export type InsertConversation = z.infer<typeof insertConversationSchema>;

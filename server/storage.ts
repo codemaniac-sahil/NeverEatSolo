@@ -1,4 +1,10 @@
-import { users, type User, type InsertUser, restaurants, type Restaurant, type InsertRestaurant, invitations, type Invitation, type InsertInvitation } from "@shared/schema";
+import { 
+  users, type User, type InsertUser, 
+  restaurants, type Restaurant, type InsertRestaurant, 
+  invitations, type Invitation, type InsertInvitation,
+  messages, type Message, type InsertMessage,
+  conversations, type Conversation, type InsertConversation
+} from "@shared/schema";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { db } from "./db";
@@ -38,6 +44,26 @@ export interface IStorage {
   getInvitationsForUser(userId: number): Promise<Invitation[]>;
   getUpcomingMeals(userId: number): Promise<(Invitation & { restaurant: Restaurant, partner: User })[]>;
   
+  // Messaging operations
+  getConversations(userId: number): Promise<(Conversation & { 
+    otherUser: User, 
+    lastMessage: Message | null 
+  })[]>;
+  
+  getConversationByUsers(user1Id: number, user2Id: number): Promise<Conversation | undefined>;
+  
+  createConversation(conversation: InsertConversation): Promise<Conversation>;
+  
+  getMessages(conversationId: string): Promise<(Message & { 
+    sender: User 
+  })[]>;
+  
+  createMessage(message: InsertMessage): Promise<Message>;
+  
+  markMessagesAsRead(conversationId: string, userId: number): Promise<void>;
+
+  getUnreadCount(userId: number): Promise<number>;
+  
   // Session store
   sessionStore: session.Store;
 }
@@ -54,6 +80,152 @@ export class DatabaseStorage implements IStorage {
     
     // Seed some initial data
     this.seedInitialData();
+  }
+  
+  // Messaging methods
+  async getConversations(userId: number): Promise<(Conversation & { otherUser: User, lastMessage: Message | null })[]> {
+    // Find all conversations where user is either user1 or user2
+    const userConversations = await db
+      .select()
+      .from(conversations)
+      .where(
+        or(
+          eq(conversations.user1Id, userId),
+          eq(conversations.user2Id, userId)
+        )
+      )
+      .orderBy(desc(conversations.lastMessageAt));
+    
+    const result: (Conversation & { otherUser: User, lastMessage: Message | null })[] = [];
+    
+    for (const conversation of userConversations) {
+      // Determine which user is the "other" user
+      const otherUserId = conversation.user1Id === userId ? conversation.user2Id : conversation.user1Id;
+      
+      // Get the other user's details
+      const [otherUser] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, otherUserId));
+        
+      // Get the last message in this conversation
+      const [lastMessage] = await db
+        .select()
+        .from(messages)
+        .where(eq(messages.conversationId, conversation.conversationId))
+        .orderBy(desc(messages.createdAt))
+        .limit(1);
+      
+      if (otherUser) {
+        result.push({
+          ...conversation,
+          otherUser,
+          lastMessage: lastMessage || null
+        });
+      }
+    }
+    
+    return result;
+  }
+  
+  async getConversationByUsers(user1Id: number, user2Id: number): Promise<Conversation | undefined> {
+    // Sort the user IDs to ensure consistent conversation IDs
+    const [smallerId, largerId] = [user1Id, user2Id].sort((a, b) => a - b);
+    
+    // Check if a conversation already exists
+    const [existingConversation] = await db
+      .select()
+      .from(conversations)
+      .where(
+        and(
+          eq(conversations.user1Id, smallerId),
+          eq(conversations.user2Id, largerId)
+        )
+      );
+      
+    return existingConversation;
+  }
+  
+  async createConversation(insertConversation: InsertConversation): Promise<Conversation> {
+    const [conversation] = await db
+      .insert(conversations)
+      .values(insertConversation)
+      .returning();
+      
+    return conversation;
+  }
+  
+  async getMessages(conversationId: string): Promise<(Message & { sender: User })[]> {
+    // Get all messages in the conversation
+    const messagesList = await db
+      .select()
+      .from(messages)
+      .where(eq(messages.conversationId, conversationId))
+      .orderBy(asc(messages.createdAt));
+    
+    // For each message, get the sender details
+    const result: (Message & { sender: User })[] = [];
+    
+    for (const message of messagesList) {
+      const [sender] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, message.senderId));
+        
+      if (sender) {
+        result.push({
+          ...message,
+          sender
+        });
+      }
+    }
+    
+    return result;
+  }
+  
+  async createMessage(insertMessage: InsertMessage): Promise<Message> {
+    // Create the message
+    const [message] = await db
+      .insert(messages)
+      .values(insertMessage)
+      .returning();
+    
+    // Update the lastMessageAt timestamp in the conversation
+    await db
+      .update(conversations)
+      .set({ lastMessageAt: new Date() })
+      .where(eq(conversations.conversationId, insertMessage.conversationId));
+      
+    return message;
+  }
+  
+  async markMessagesAsRead(conversationId: string, userId: number): Promise<void> {
+    // Update all unread messages sent to this user in this conversation
+    await db
+      .update(messages)
+      .set({ isRead: true })
+      .where(
+        and(
+          eq(messages.conversationId, conversationId),
+          eq(messages.receiverId, userId),
+          eq(messages.isRead, false)
+        )
+      );
+  }
+  
+  async getUnreadCount(userId: number): Promise<number> {
+    // Count all unread messages for this user
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(messages)
+      .where(
+        and(
+          eq(messages.receiverId, userId),
+          eq(messages.isRead, false)
+        )
+      );
+      
+    return result[0]?.count || 0;
   }
 
   private async seedInitialData() {
