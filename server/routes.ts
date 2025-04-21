@@ -1158,7 +1158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User Settings routes
-  app.get("/api/settings", async (req, res) => {
+  app.get("/api/user/settings", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
 
     try {
@@ -1170,7 +1170,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/settings", async (req, res) => {
+  app.patch("/api/user/settings", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
 
     try {

@@ -21,46 +21,20 @@ import { AuthProvider } from "./hooks/use-auth";
 function Router() {
   return (
     <Switch>
-      <Route path="/">
-        <ProtectedRoute path="/" component={HomePage} />
-      </Route>
-      <Route path="/profile">
-        <ProtectedRoute path="/profile" component={ProfilePage} />
-      </Route>
-      <Route path="/onboarding">
-        <ProtectedRoute path="/onboarding" component={OnboardingPage} />
-      </Route>
-      <Route path="/messages">
-        <ProtectedRoute path="/messages" component={MessagingPage} />
-      </Route>
-      <Route path="/saved">
-        <ProtectedRoute path="/saved" component={SavedRestaurantsPage} />
-      </Route>
-      <Route path="/matches">
-        <ProtectedRoute path="/matches" component={MatchesPage} />
-      </Route>
-      <Route path="/restaurants">
-        <ProtectedRoute path="/restaurants" component={RestaurantsPage} />
-      </Route>
-      <Route path="/friends">
-        <ProtectedRoute path="/friends" component={FriendsPage} />
-      </Route>
-      <Route path="/dining-circles">
-        <ProtectedRoute path="/dining-circles" component={DiningCirclesPage} />
-      </Route>
-      <Route path="/recommendations">
-        <ProtectedRoute path="/recommendations" component={RecommendationsPage} />
-      </Route>
-      <Route path="/availability">
-        <ProtectedRoute path="/availability" component={AvailabilityPage} />
-      </Route>
-      <Route path="/settings">
-        <ProtectedRoute path="/settings" component={SettingsPage} />
-      </Route>
+      <ProtectedRoute path="/" component={HomePage} />
+      <ProtectedRoute path="/profile" component={ProfilePage} />
+      <ProtectedRoute path="/onboarding" component={OnboardingPage} />
+      <ProtectedRoute path="/messages" component={MessagingPage} />
+      <ProtectedRoute path="/saved" component={SavedRestaurantsPage} />
+      <ProtectedRoute path="/matches" component={MatchesPage} />
+      <ProtectedRoute path="/restaurants" component={RestaurantsPage} />
+      <ProtectedRoute path="/friends" component={FriendsPage} />
+      <ProtectedRoute path="/dining-circles" component={DiningCirclesPage} />
+      <ProtectedRoute path="/recommendations" component={RecommendationsPage} />
+      <ProtectedRoute path="/availability" component={AvailabilityPage} />
+      <ProtectedRoute path="/settings" component={SettingsPage} />
       <Route path="/auth" component={AuthPage} />
-      <Route>
-        <NotFound />
-      </Route>
+      <Route component={NotFound} />
     </Switch>
   );
 }
