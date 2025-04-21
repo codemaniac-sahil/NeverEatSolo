@@ -132,6 +132,49 @@ export interface IStorage {
   getUserSettings(userId: number): Promise<UserSettings | undefined>;
   createOrUpdateUserSettings(userId: number, settings: Partial<UserSettings>): Promise<UserSettings>;
   
+  // Corporate Organization operations
+  getOrganization(id: number): Promise<Organization | undefined>;
+  getOrganizationByDomain(domain: string): Promise<Organization | undefined>;
+  createOrganization(organization: InsertOrganization): Promise<Organization>;
+  updateOrganization(id: number, data: Partial<Organization>): Promise<Organization | undefined>;
+  
+  // Corporate Team operations
+  getTeam(id: number): Promise<Team | undefined>;
+  getTeamsByOrganization(organizationId: number): Promise<Team[]>;
+  createTeam(team: InsertTeam): Promise<Team>;
+  updateTeam(id: number, data: Partial<Team>): Promise<Team | undefined>;
+  getTeamMembers(teamId: number): Promise<(TeamMember & { user: User })[]>;
+  
+  // Corporate User operations
+  getUsersByOrganization(organizationId: number): Promise<User[]>;
+  getUsersByWorkspace(workspaceId: number): Promise<User[]>;
+  getUsersByTeam(teamId: number): Promise<User[]>;
+  getUsersAvailableForLunch(
+    organizationId: number,
+    workspaceId?: number,
+    teamId?: number,
+    departmentOnly?: boolean
+  ): Promise<(UserAvailability & { user: User })[]>;
+  toggleWorkProfile(userId: number, useWorkProfile: boolean): Promise<User | undefined>;
+  
+  // Corporate Workspace operations
+  getWorkspace(id: number): Promise<Workspace | undefined>;
+  getWorkspacesByOrganization(organizationId: number): Promise<Workspace[]>;
+  createWorkspace(workspace: InsertWorkspace): Promise<Workspace>;
+  
+  // Campus Restaurant operations
+  getCampusRestaurant(id: number): Promise<CampusRestaurant | undefined>;
+  getCampusRestaurantsByOrganization(organizationId: number): Promise<CampusRestaurant[]>;
+  getCampusRestaurantsByWorkspace(workspaceId: number): Promise<CampusRestaurant[]>;
+  createCampusRestaurant(restaurant: InsertCampusRestaurant): Promise<CampusRestaurant>;
+  
+  // Corporate Event operations
+  getCorporateEvent(id: number): Promise<CorporateEvent | undefined>;
+  getCorporateEventsByOrganization(organizationId: number): Promise<CorporateEvent[]>;
+  getCorporateEventsByTeam(teamId: number): Promise<CorporateEvent[]>;
+  getUpcomingCorporateEvents(userId: number): Promise<CorporateEvent[]>;
+  createCorporateEvent(event: InsertCorporateEvent): Promise<CorporateEvent>;
+  
   // Session store
   sessionStore: session.Store;
 }

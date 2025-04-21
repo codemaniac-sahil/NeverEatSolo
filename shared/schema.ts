@@ -3,6 +3,52 @@ import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Corporate Organization model
+export const organizations = pgTable("organizations", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  domain: text("domain").notNull().unique(), // Email domain used for SSO verification
+  logoImage: text("logo_image"),
+  primaryColor: text("primary_color"), // For branding
+  description: text("description"),
+  address: text("address"),
+  locationLat: text("location_lat"),
+  locationLng: text("location_lng"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  adminEmail: text("admin_email"), // Organization admin contact
+  maxEmployees: integer("max_employees"), // For plan limitations
+  subscriptionTier: text("subscription_tier").default("basic"), // basic, premium, enterprise
+});
+
+// Corporate Teams model
+export const teams = pgTable("teams", {
+  id: serial("id").primaryKey(),
+  organizationId: integer("organization_id").notNull().references(() => organizations.id),
+  name: text("name").notNull(),
+  description: text("description"),
+  department: text("department"),
+  managerId: integer("manager_id"), // Will reference a user id
+  logoImage: text("logo_image"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+});
+
+// Corporate Workspace Locations model (for campus/office locations)
+export const workspaces = pgTable("workspaces", {
+  id: serial("id").primaryKey(),
+  organizationId: integer("organization_id").notNull().references(() => organizations.id),
+  name: text("name").notNull(),
+  address: text("address").notNull(),
+  locationLat: text("location_lat").notNull(),
+  locationLng: text("location_lng").notNull(),
+  floor: text("floor"),
+  buildingName: text("building_name"),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+});
+
 // User model
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -29,6 +75,18 @@ export const users = pgTable("users", {
   microsoftId: text("microsoft_id"),
   microsoftRefreshToken: text("microsoft_refresh_token"),
   useMicrosoftCalendar: boolean("use_microsoft_calendar").default(false),
+  
+  // Corporate fields
+  organizationId: integer("organization_id").references(() => organizations.id),
+  workEmail: text("work_email"), // Separate from personal email for corp users
+  jobTitle: text("job_title"),
+  department: text("department"),
+  employeeId: text("employee_id"),
+  workspaceId: integer("workspace_id").references(() => workspaces.id),
+  isCorpAdmin: boolean("is_corp_admin").default(false),
+  useWorkProfile: boolean("use_work_profile").default(false), // Toggle between personal/work profiles
+  workProfilePublic: boolean("work_profile_public").default(true), // Visibility of work profile
+  allowCrossDepartmentMatching: boolean("allow_cross_department_matching").default(true),
 });
 
 // Restaurant model
@@ -127,7 +185,70 @@ export const diningCircleMembers = pgTable("dining_circle_members", {
   pk: primaryKey({ columns: [t.diningCircleId, t.userId] })
 }));
 
-// User Availability Status
+// Team Members
+export const teamMembers = pgTable("team_members", {
+  teamId: integer("team_id").notNull().references(() => teams.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  role: text("role").notNull().default("member"), // manager, lead, member
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.teamId, t.userId] })
+}));
+
+// Campus Restaurants (internal to organization)
+export const campusRestaurants = pgTable("campus_restaurants", {
+  id: serial("id").primaryKey(),
+  organizationId: integer("organization_id").notNull().references(() => organizations.id),
+  workspaceId: integer("workspace_id").references(() => workspaces.id),
+  name: text("name").notNull(),
+  description: text("description"),
+  locationDetails: text("location_details").notNull(), // "Building A, Floor 2", etc.
+  cuisine: text("cuisine").notNull(),
+  priceRange: text("price_range").notNull(),
+  openingTime: text("opening_time"),
+  closingTime: text("closing_time"),
+  daysOpen: json("days_open").$type<string[]>().default([]), // "Monday", "Tuesday", etc.
+  menuUrl: text("menu_url"),
+  image: text("image"),
+  capacity: integer("capacity"),
+  averageWaitTime: integer("average_wait_time"), // in minutes
+  acceptsReservations: boolean("accepts_reservations").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+});
+
+// Corporate Events (team lunches, welcome events, etc.)
+export const corporateEvents = pgTable("corporate_events", {
+  id: serial("id").primaryKey(),
+  organizationId: integer("organization_id").notNull().references(() => organizations.id),
+  teamId: integer("team_id").references(() => teams.id),
+  name: text("name").notNull(),
+  description: text("description"),
+  locationId: integer("location_id"), // Could reference campus_restaurants or workspaces
+  locationType: text("location_type"), // "restaurant", "workspace", "external"
+  externalLocation: text("external_location"),
+  startTime: timestamp("start_time").notNull(),
+  endTime: timestamp("end_time").notNull(),
+  createdBy: integer("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  isPublic: boolean("is_public").default(true).notNull(), // Whether visible to all org members
+  maxParticipants: integer("max_participants"),
+  eventType: text("event_type").notNull(), // "team_lunch", "welcome_event", "workshop", etc.
+});
+
+// Corporate Event Participants
+export const eventParticipants = pgTable("event_participants", {
+  eventId: integer("event_id").notNull().references(() => corporateEvents.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  status: text("status").notNull().default("invited"), // invited, attending, declined, waitlist
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+  comment: text("comment"),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.eventId, t.userId] })
+}));
+
+// User Availability Status (enhanced with corporate fields)
 export const userAvailabilities = pgTable("user_availabilities", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
@@ -141,6 +262,15 @@ export const userAvailabilities = pgTable("user_availabilities", {
   preferredRadius: integer("preferred_radius"), // in kilometers
   preferredCuisines: json("preferred_cuisines").$type<string[]>().default([]),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  
+  // Corporate-specific fields
+  isWorkAvailability: boolean("is_work_availability").default(false),
+  workspaceId: integer("workspace_id").references(() => workspaces.id),
+  restrictToTeam: boolean("restrict_to_team").default(false),
+  teamId: integer("team_id").references(() => teams.id),
+  restrictToDepartment: boolean("restrict_to_department").default(false),
+  spontaneous: boolean("spontaneous").default(false), // For "free for lunch today" signals
+  lookingForNewConnections: boolean("looking_for_new_connections").default(true), // Preference for meeting new colleagues
 });
 
 // Restaurant Recommendations
@@ -211,6 +341,13 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   // Additional relations for new features
   notifications: many(notifications),
   settings: one(userSettings),
+  
+  // Corporate relations
+  organization: one(organizations, { fields: [users.organizationId], references: [organizations.id] }),
+  workspace: one(workspaces, { fields: [users.workspaceId], references: [workspaces.id] }),
+  teamMemberships: many(teamMembers, { relationName: "teamMember" }),
+  createdEvents: many(corporateEvents, { relationName: "eventCreator" }),
+  eventParticipations: many(eventParticipants, { relationName: "eventParticipant" }),
 }));
 
 export const restaurantsRelations = relations(restaurants, ({ many }) => ({
@@ -273,6 +410,50 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
 
 export const userSettingsRelations = relations(userSettings, ({ one }) => ({
   user: one(users, { fields: [userSettings.userId], references: [users.id] }),
+}));
+
+// Corporate relations
+export const organizationsRelations = relations(organizations, ({ many }) => ({
+  users: many(users),
+  teams: many(teams),
+  workspaces: many(workspaces),
+  campusRestaurants: many(campusRestaurants),
+  events: many(corporateEvents),
+}));
+
+export const teamsRelations = relations(teams, ({ one, many }) => ({
+  organization: one(organizations, { fields: [teams.organizationId], references: [organizations.id] }),
+  manager: one(users, { fields: [teams.managerId], references: [users.id] }),
+  members: many(teamMembers),
+  events: many(corporateEvents),
+}));
+
+export const workspacesRelations = relations(workspaces, ({ one, many }) => ({
+  organization: one(organizations, { fields: [workspaces.organizationId], references: [organizations.id] }),
+  users: many(users),
+  campusRestaurants: many(campusRestaurants),
+}));
+
+export const teamMembersRelations = relations(teamMembers, ({ one }) => ({
+  team: one(teams, { fields: [teamMembers.teamId], references: [teams.id] }),
+  user: one(users, { relationName: "teamMember", fields: [teamMembers.userId], references: [users.id] }),
+}));
+
+export const campusRestaurantsRelations = relations(campusRestaurants, ({ one }) => ({
+  organization: one(organizations, { fields: [campusRestaurants.organizationId], references: [organizations.id] }),
+  workspace: one(workspaces, { fields: [campusRestaurants.workspaceId], references: [workspaces.id] }),
+}));
+
+export const corporateEventsRelations = relations(corporateEvents, ({ one, many }) => ({
+  organization: one(organizations, { fields: [corporateEvents.organizationId], references: [organizations.id] }),
+  team: one(teams, { fields: [corporateEvents.teamId], references: [teams.id] }),
+  creator: one(users, { relationName: "eventCreator", fields: [corporateEvents.createdBy], references: [users.id] }),
+  participants: many(eventParticipants),
+}));
+
+export const eventParticipantsRelations = relations(eventParticipants, ({ one }) => ({
+  event: one(corporateEvents, { fields: [eventParticipants.eventId], references: [corporateEvents.id] }),
+  user: one(users, { relationName: "eventParticipant", fields: [eventParticipants.userId], references: [users.id] }),
 }));
 
 // Define Zod schemas for validation
@@ -394,3 +575,59 @@ export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type UserSettings = typeof userSettings.$inferSelect;
 export type InsertUserSettings = z.infer<typeof insertUserSettingsSchema>;
+
+// Corporate schemas
+export const insertOrganizationSchema = createInsertSchema(organizations).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertTeamSchema = createInsertSchema(teams).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertWorkspaceSchema = createInsertSchema(workspaces).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertTeamMemberSchema = createInsertSchema(teamMembers).omit({
+  joinedAt: true,
+});
+
+export const insertCampusRestaurantSchema = createInsertSchema(campusRestaurants).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertCorporateEventSchema = createInsertSchema(corporateEvents).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertEventParticipantSchema = createInsertSchema(eventParticipants).omit({
+  joinedAt: true,
+});
+
+// Corporate types
+export type Organization = typeof organizations.$inferSelect;
+export type InsertOrganization = z.infer<typeof insertOrganizationSchema>;
+
+export type Team = typeof teams.$inferSelect;
+export type InsertTeam = z.infer<typeof insertTeamSchema>;
+
+export type Workspace = typeof workspaces.$inferSelect;
+export type InsertWorkspace = z.infer<typeof insertWorkspaceSchema>;
+
+export type TeamMember = typeof teamMembers.$inferSelect;
+export type InsertTeamMember = z.infer<typeof insertTeamMemberSchema>;
+
+export type CampusRestaurant = typeof campusRestaurants.$inferSelect;
+export type InsertCampusRestaurant = z.infer<typeof insertCampusRestaurantSchema>;
+
+export type CorporateEvent = typeof corporateEvents.$inferSelect;
+export type InsertCorporateEvent = z.infer<typeof insertCorporateEventSchema>;
+
+export type EventParticipant = typeof eventParticipants.$inferSelect;
+export type InsertEventParticipant = z.infer<typeof insertEventParticipantSchema>;
