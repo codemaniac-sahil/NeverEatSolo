@@ -95,14 +95,14 @@ export default function HomePage() {
         <div className="elegant-container relative z-10">
           <div className="max-w-2xl">
             <h1 className="elegant-heading mb-4">
-              Fine Dining
+              Never Eat
               <br/>
-              <span className="text-zinc-100">Together</span>
+              <span className="text-zinc-100">Solo</span>
             </h1>
             
             <p className="text-lg md:text-xl font-light text-zinc-400 mb-8 max-w-lg">
               Connect with like-minded food enthusiasts for memorable dining experiences
-              at the finest establishments in your area.
+              at any type of restaurant, from casual cafés to local favorites.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 mt-8">
@@ -110,14 +110,14 @@ export default function HomePage() {
                 onClick={() => setShowScheduleModal(true)}
                 className="elegant-button px-6 py-6 text-sm uppercase tracking-widest"
               >
-                Schedule a Meal
+                Join Me
               </Button>
               <Button 
                 variant="outline" 
                 className="elegant-button px-6 py-6 text-sm uppercase tracking-widest border-zinc-700 text-zinc-400 hover:bg-zinc-800/50"
                 onClick={() => setShowScheduleModal(true)}
               >
-                Find Companion
+                Find Companions
               </Button>
             </div>
           </div>

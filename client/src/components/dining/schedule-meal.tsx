@@ -247,9 +247,9 @@ export default function ScheduleMealModal({ isOpen, onClose }: ScheduleMealModal
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md md:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-center">Schedule a Meal</DialogTitle>
-          <DialogDescription className="text-center text-neutral-600">
-            Plan your meals and connect with compatible dining companions
+          <DialogTitle className="text-2xl font-light text-center text-primary">Join Me for a Meal</DialogTitle>
+          <DialogDescription className="text-center text-zinc-400">
+            Share your dining plans and connect with compatible companions
           </DialogDescription>
         </DialogHeader>
         
@@ -257,7 +257,7 @@ export default function ScheduleMealModal({ isOpen, onClose }: ScheduleMealModal
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="planned" className="flex items-center gap-2">
               <CalendarDays className="h-4 w-4" />
-              <span>Planned Meal</span>
+              <span>Join Later</span>
             </TabsTrigger>
             <TabsTrigger value="spontaneous" className="flex items-center gap-2">
               <AlarmClock className="h-4 w-4" />
@@ -444,7 +444,7 @@ export default function ScheduleMealModal({ isOpen, onClose }: ScheduleMealModal
                     className="w-full bg-primary hover:bg-primary/90"
                     disabled={scheduleMutation.isPending}
                   >
-                    {scheduleMutation.isPending ? "Scheduling..." : "Schedule Meal"}
+                    {scheduleMutation.isPending ? "Creating..." : "Join Me"}
                   </Button>
                 </DialogFooter>
               </form>
@@ -600,7 +600,7 @@ export default function ScheduleMealModal({ isOpen, onClose }: ScheduleMealModal
                     className="w-full bg-primary hover:bg-primary/90"
                     disabled={spontaneousMutation.isPending}
                   >
-                    {spontaneousMutation.isPending ? "Creating..." : "I'm Available Now"}
+                    {spontaneousMutation.isPending ? "Creating..." : "Join Me Now"}
                   </Button>
                 </DialogFooter>
               </form>
