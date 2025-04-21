@@ -34,6 +34,30 @@ async function updateSchema() {
       );
     `);
     
+    console.log('Creating conversations table...');
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS conversations (
+        id SERIAL PRIMARY KEY,
+        conversation_id TEXT NOT NULL UNIQUE,
+        user1_id INTEGER NOT NULL REFERENCES users(id),
+        user2_id INTEGER NOT NULL REFERENCES users(id),
+        last_message_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+    `);
+    
+    console.log('Creating messages table...');
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS messages (
+        id SERIAL PRIMARY KEY,
+        sender_id INTEGER NOT NULL REFERENCES users(id),
+        receiver_id INTEGER NOT NULL REFERENCES users(id),
+        content TEXT NOT NULL,
+        is_read BOOLEAN NOT NULL DEFAULT false,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        conversation_id TEXT NOT NULL
+      );
+    `);
+    
     console.log('Schema successfully updated!');
   } catch (error) {
     console.error('Error updating schema:', error);
