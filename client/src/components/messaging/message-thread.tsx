@@ -150,29 +150,29 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b bg-muted/40 flex items-center">
-        <Avatar className="h-10 w-10">
+      <div className="p-4 border-b border-zinc-800 bg-zinc-900 flex items-center">
+        <Avatar className="h-10 w-10 ring-1 ring-zinc-700">
           <AvatarImage
             src={conversation.otherUser.profileImage || undefined}
             alt={conversation.otherUser.name || "User"}
           />
-          <AvatarFallback>
+          <AvatarFallback className="bg-zinc-800 text-primary">
             {conversation.otherUser.name?.substring(0, 2).toUpperCase() || "U"}
           </AvatarFallback>
         </Avatar>
         <div className="ml-3">
-          <h3 className="font-medium">{conversation.otherUser.name}</h3>
-          <p className="text-sm text-muted-foreground">
+          <h3 className="font-light tracking-wide text-zinc-200">{conversation.otherUser.name}</h3>
+          <p className="text-sm text-zinc-400 font-light">
             {conversation.otherUser.occupation || "No occupation"}
           </p>
         </div>
       </div>
 
-      <div className="flex-1 p-4 overflow-y-auto space-y-4">
+      <div className="flex-1 p-6 overflow-y-auto space-y-6 bg-zinc-950/50">
         {messages.length === 0 ? (
           <div className="flex h-full items-center justify-center">
-            <div className="text-center text-muted-foreground">
-              <p>No messages yet</p>
+            <div className="text-center text-zinc-500">
+              <p className="mb-1 text-lg font-light">No messages yet</p>
               <p className="text-sm">Start the conversation by sending a message</p>
             </div>
           </div>
@@ -186,27 +186,27 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
               >
                 <div className="flex max-w-[70%]">
                   {!isCurrentUser && (
-                    <Avatar className="h-8 w-8 mr-2 mt-1">
+                    <Avatar className="h-8 w-8 mr-2 mt-1 ring-1 ring-zinc-800">
                       <AvatarImage
                         src={message.sender.profileImage || undefined}
                         alt={message.sender.name || "User"}
                       />
-                      <AvatarFallback>
+                      <AvatarFallback className="bg-zinc-800 text-primary">
                         {message.sender.name?.substring(0, 2).toUpperCase() || "U"}
                       </AvatarFallback>
                     </Avatar>
                   )}
                   <div>
                     <div
-                      className={`px-4 py-2 rounded-xl ${
+                      className={`px-5 py-3 ${
                         isCurrentUser
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted"
+                          ? "bg-primary/20 border border-primary/30 text-zinc-100"
+                          : "bg-zinc-800/70 border border-zinc-700/50 text-zinc-200"
                       }`}
                     >
                       {message.content}
                     </div>
-                    <div className="mt-1 text-xs text-muted-foreground text-right">
+                    <div className="mt-1 text-xs text-zinc-500 text-right">
                       {formatDistanceToNow(new Date(message.createdAt), {
                         addSuffix: true,
                       })}
@@ -220,17 +220,18 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
         <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={handleSendMessage} className="p-4 border-t flex gap-2">
+      <form onSubmit={handleSendMessage} className="p-4 border-t border-zinc-800 bg-zinc-900 flex gap-3">
         <Input
           ref={inputRef}
           placeholder="Type a message..."
           disabled={sendMessageMutation.isPending}
-          className="flex-1"
+          className="flex-1 bg-zinc-800/50 border-zinc-700 focus-visible:ring-primary/30 placeholder:text-zinc-500"
         />
         <Button
           type="submit"
           size="icon"
           disabled={sendMessageMutation.isPending}
+          className="bg-primary/20 border border-primary/30 hover:bg-primary/30 text-primary"
         >
           <Send className="h-4 w-4" />
         </Button>

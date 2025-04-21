@@ -56,21 +56,25 @@ export default function MessagingPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex flex-col min-h-screen bg-zinc-950">
       <SiteHeader />
-      <div className="flex-1 container py-6">
-        <div className="flex gap-8 h-[calc(100vh-200px)]">
-          <div className="w-1/3 border rounded-lg overflow-hidden flex flex-col">
-            <div className="p-4 bg-muted/40 border-b flex justify-between items-center">
-              <h1 className="text-2xl font-bold flex items-center gap-2">
-                <MessageSquare className="h-6 w-6" />
-                Messages
-                {unreadCount && unreadCount.count > 0 && (
-                  <span className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">
-                    {unreadCount.count}
-                  </span>
-                )}
-              </h1>
+      <div className="elegant-container py-8 flex-1">
+        <h1 className="text-3xl font-light mb-8 text-zinc-100">
+          <span className="text-primary">MESSAGES</span>
+          {unreadCount && unreadCount.count > 0 && (
+            <span className="bg-primary/20 text-primary text-xs px-2 py-1 ml-2 rounded-sm border border-primary/30">
+              {unreadCount.count} new
+            </span>
+          )}
+        </h1>
+        
+        <div className="flex gap-8 h-[calc(100vh-240px)]">
+          <div className="w-1/3 elegant-card overflow-hidden flex flex-col">
+            <div className="p-4 bg-zinc-900 border-b border-zinc-800 flex justify-between items-center">
+              <h2 className="text-lg font-light tracking-wide flex items-center gap-2">
+                <MessageSquare className="h-5 w-5 text-primary" />
+                Conversations
+              </h2>
               <NewConversationButton onConversationCreated={handleConversationCreated} />
             </div>
             <div className="flex-1 overflow-auto p-4">
@@ -80,16 +84,17 @@ export default function MessagingPage() {
               />
             </div>
           </div>
-          <div className="flex-1 border rounded-lg overflow-hidden">
+          
+          <div className="flex-1 elegant-card overflow-hidden">
             {selectedConversation ? (
               <MessageThread conversation={selectedConversation} />
             ) : (
               <div className="h-full flex items-center justify-center text-center p-6">
                 <div>
-                  <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground" />
-                  <h2 className="text-xl font-medium mt-4">No conversation selected</h2>
-                  <p className="text-muted-foreground mt-2">
-                    Select a conversation from the list or start a new one.
+                  <MessageSquare className="h-16 w-16 mx-auto text-primary/40" />
+                  <h2 className="text-2xl font-light mt-6 text-zinc-300">No conversation selected</h2>
+                  <p className="text-zinc-400 mt-3 max-w-md">
+                    Select a conversation from the list or start a new one to connect with fellow diners.
                   </p>
                 </div>
               </div>

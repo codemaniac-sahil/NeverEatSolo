@@ -39,18 +39,17 @@ export default function ConversationsList({
   if (isLoading) {
     return (
       <div className="space-y-3">
-        <h2 className="text-xl font-bold mb-4">Conversations</h2>
         {[1, 2, 3].map((i) => (
-          <Card key={i} className="w-full">
-            <CardContent className="p-4 flex items-center gap-3">
-              <Skeleton className="h-10 w-10 rounded-full" />
+          <div key={i} className="border border-zinc-800 bg-zinc-900/80 rounded-sm backdrop-blur-sm">
+            <div className="p-4 flex items-center gap-3">
+              <Skeleton className="h-10 w-10 rounded-full bg-zinc-800" />
               <div className="flex-1">
-                <Skeleton className="h-4 w-24 mb-2" />
-                <Skeleton className="h-3 w-36" />
+                <Skeleton className="h-4 w-24 mb-2 bg-zinc-800" />
+                <Skeleton className="h-3 w-36 bg-zinc-800" />
               </div>
-              <Skeleton className="h-8 w-8 rounded-full" />
-            </CardContent>
-          </Card>
+              <Skeleton className="h-8 w-8 rounded-full bg-zinc-800" />
+            </div>
+          </div>
         ))}
       </div>
     );
@@ -59,11 +58,10 @@ export default function ConversationsList({
   if (error) {
     return (
       <div className="text-center py-8">
-        <p className="text-red-500">Error loading conversations</p>
+        <p className="text-amber-500 mb-3">Error loading conversations</p>
         <Button
-          variant="outline"
           onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/conversations"] })}
-          className="mt-2"
+          className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 py-1 px-4 text-sm font-light border border-zinc-700"
         >
           Retry
         </Button>
@@ -74,64 +72,72 @@ export default function ConversationsList({
   if (conversations.length === 0) {
     return (
       <div className="text-center py-8">
-        <MessageCircle className="h-12 w-12 mx-auto text-muted-foreground" />
-        <h3 className="mt-4 text-lg font-medium">No conversations yet</h3>
-        <p className="text-muted-foreground mt-1">
-          Start a conversation with someone to chat
+        <MessageCircle className="h-12 w-12 mx-auto text-primary/30" />
+        <h3 className="mt-4 text-lg font-light text-zinc-300">No conversations yet</h3>
+        <p className="text-zinc-500 mt-2 text-sm">
+          Use the "New Chat" button to start a conversation
         </p>
       </div>
     );
   }
 
   return (
-    <div>
-      <h2 className="text-xl font-bold mb-4">Conversations</h2>
-      <div className="space-y-3">
-        {conversations.map((conversation) => {
-          const { otherUser, lastMessage } = conversation;
-          const isSelected = selectedConversationId === conversation.conversationId;
-          
-          return (
-            <Card 
-              key={conversation.id}
-              className={`cursor-pointer hover:bg-muted/50 transition-colors ${
-                isSelected ? "bg-muted" : ""
-              }`}
-              onClick={() => onSelectConversation(conversation)}
-            >
-              <CardContent className="p-4 flex items-center">
-                <Avatar className="h-10 w-10 mr-3">
-                  <AvatarImage src={otherUser.profileImage || undefined} alt={otherUser.name || "User"} />
-                  <AvatarFallback>
-                    {otherUser.name?.substring(0, 2).toUpperCase() || "U"}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-center">
-                    <h3 className="font-medium truncate">{otherUser.name}</h3>
-                    {lastMessage && (
-                      <span className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(lastMessage.createdAt), { addSuffix: true })}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm text-muted-foreground truncate">
-                    {lastMessage
-                      ? lastMessage.senderId === user?.id
-                        ? `You: ${lastMessage.content}`
-                        : lastMessage.content
-                      : "No messages yet"}
-                  </p>
+    <div className="space-y-3">
+      {conversations.map((conversation) => {
+        const { otherUser, lastMessage } = conversation;
+        const isSelected = selectedConversationId === conversation.conversationId;
+        const isUnread = !lastMessage?.isRead && lastMessage?.receiverId === user?.id;
+        
+        return (
+          <div 
+            key={conversation.id}
+            className={`border rounded-sm backdrop-blur-sm cursor-pointer transition-all duration-200 ${
+              isSelected 
+                ? "border-primary/50 bg-zinc-800/60" 
+                : "border-zinc-800 bg-zinc-900/30 hover:bg-zinc-800/30"
+            }`}
+            onClick={() => onSelectConversation(conversation)}
+          >
+            <div className="p-4 flex items-center">
+              <Avatar className={`h-10 w-10 mr-3 ${isSelected ? 'ring-1 ring-primary/50' : ''}`}>
+                <AvatarImage src={otherUser.profileImage || undefined} alt={otherUser.name || "User"} />
+                <AvatarFallback className="bg-zinc-800 text-primary">
+                  {otherUser.name?.substring(0, 2).toUpperCase() || "U"}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-center">
+                  <h3 className={`text-sm font-light tracking-wide truncate ${isSelected ? 'text-primary' : 'text-zinc-200'}`}>
+                    {otherUser.name}
+                  </h3>
+                  {lastMessage && (
+                    <span className="text-xs text-zinc-500">
+                      {formatDistanceToNow(new Date(lastMessage.createdAt), { addSuffix: true })}
+                    </span>
+                  )}
                 </div>
-                {!lastMessage?.isRead && lastMessage?.receiverId === user?.id && (
-                  <Badge className="ml-2 bg-primary">New</Badge>
-                )}
-                <ChevronRight className="h-5 w-5 ml-2 text-muted-foreground" />
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                <p className={`text-xs truncate mt-1 ${
+                  isUnread 
+                    ? "text-zinc-200 font-normal" 
+                    : "text-zinc-500 font-light"
+                }`}>
+                  {lastMessage
+                    ? lastMessage.senderId === user?.id
+                      ? `You: ${lastMessage.content}`
+                      : lastMessage.content
+                    : "No messages yet"}
+                </p>
+              </div>
+              {isUnread && (
+                <div className="ml-2 h-2 w-2 rounded-full bg-primary"></div>
+              )}
+              <ChevronRight className={`h-4 w-4 ml-2 ${
+                isSelected ? "text-primary" : "text-zinc-600"
+              }`} />
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
