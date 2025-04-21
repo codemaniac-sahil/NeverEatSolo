@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 
 // Toggle this to use mock data
-const DEMO_MODE = true;
+const DEMO_MODE = false;
 
 // Type for upcoming meals
 type UpcomingMeal = Invitation & { restaurant: Restaurant; partner: User };
@@ -164,7 +164,7 @@ export default function UpcomingMeals() {
   // Fetch upcoming meals from API when not in demo mode
   const { data: apiUpcomingMeals = [], isLoading: isApiLoading } = useQuery<UpcomingMeal[]>({
     queryKey: ["/api/meals/upcoming"],
-    queryFn: getQueryFn(),
+    queryFn: getQueryFn<UpcomingMeal[]>(),
     enabled: !DEMO_MODE && !!user
   });
   
