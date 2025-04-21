@@ -8,7 +8,7 @@ import {
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { db } from "./db";
-import { eq, or, and, gte, sql } from "drizzle-orm";
+import { eq, or, and, gte, sql, desc, asc } from "drizzle-orm";
 import { pool } from "./db";
 
 // @ts-ignore - Type definition issue with connect-pg-simple
