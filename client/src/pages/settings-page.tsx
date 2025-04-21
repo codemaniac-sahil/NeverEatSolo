@@ -62,7 +62,7 @@ export default function SettingsPage() {
   }
 
   // Default settings if none exist yet
-  const defaultSettings: UserSettings = {
+  const defaultSettings = {
     id: 0,
     userId: user?.id || 0,
     theme: 'dark',
@@ -82,11 +82,28 @@ export default function SettingsPage() {
     },
     searchRadius: 10,
     customUI: {},
-    lastUpdated: new Date().toISOString(),
-  };
+    lastUpdated: new Date(),
+  } as UserSettings;
 
   const currentSettings = settings || defaultSettings;
-  const { notificationPreferences, privacySettings, searchRadius, theme } = currentSettings;
+  
+  // Type-safe accessors with proper typing
+  const theme = currentSettings.theme;
+  const searchRadius = currentSettings.searchRadius;
+  const notificationPreferences = currentSettings.notificationPreferences as {
+    messages: boolean;
+    friendRequests: boolean;
+    invitations: boolean;
+    mealReminders: boolean;
+    recommendations: boolean;
+    nearbyUsers: boolean;
+  };
+  const privacySettings = currentSettings.privacySettings as {
+    profileVisibility: string;
+    locationVisibility: string;
+    availabilityVisibility: string;
+    savedRestaurantsVisibility: string;
+  };
 
   return (
     <div className="container max-w-3xl py-10">
