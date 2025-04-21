@@ -539,9 +539,10 @@ export class DatabaseStorage implements IStorage {
   async deleteFriend(id: number): Promise<boolean> {
     const result = await db
       .delete(friends)
-      .where(eq(friends.id, id));
+      .where(eq(friends.id, id))
+      .returning();
       
-    return result.rowCount > 0;
+    return result.length > 0;
   }
   
   // Dining Circle methods
@@ -622,9 +623,10 @@ export class DatabaseStorage implements IStorage {
     // Then delete the circle
     const result = await db
       .delete(diningCircles)
-      .where(eq(diningCircles.id, id));
+      .where(eq(diningCircles.id, id))
+      .returning();
       
-    return result.rowCount > 0;
+    return result.length > 0;
   }
   
   async getDiningCircleMembers(diningCircleId: number): Promise<(DiningCircleMember & { user: User })[]> {
@@ -669,9 +671,10 @@ export class DatabaseStorage implements IStorage {
           eq(diningCircleMembers.diningCircleId, diningCircleId),
           eq(diningCircleMembers.userId, userId)
         )
-      );
+      )
+      .returning();
       
-    return result.rowCount > 0;
+    return result.length > 0;
   }
   
   async updateDiningCircleMemberRole(diningCircleId: number, userId: number, role: string): Promise<DiningCircleMember | undefined> {
@@ -802,9 +805,10 @@ export class DatabaseStorage implements IStorage {
   async deleteUserAvailability(id: number): Promise<boolean> {
     const result = await db
       .delete(userAvailabilities)
-      .where(eq(userAvailabilities.id, id));
+      .where(eq(userAvailabilities.id, id))
+      .returning();
       
-    return result.rowCount > 0;
+    return result.length > 0;
   }
   
   // Restaurant Recommendation methods
@@ -864,9 +868,10 @@ export class DatabaseStorage implements IStorage {
   async deleteRestaurantRecommendation(id: number): Promise<boolean> {
     const result = await db
       .delete(restaurantRecommendations)
-      .where(eq(restaurantRecommendations.id, id));
+      .where(eq(restaurantRecommendations.id, id))
+      .returning();
       
-    return result.rowCount > 0;
+    return result.length > 0;
   }
   
   async generateRecommendationsForUser(userId: number): Promise<RestaurantRecommendation[]> {

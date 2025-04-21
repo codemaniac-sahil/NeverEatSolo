@@ -2,7 +2,18 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
-import { insertRestaurantSchema, insertInvitationSchema, insertMessageSchema, insertConversationSchema, insertSavedRestaurantSchema } from "@shared/schema";
+import { 
+  insertRestaurantSchema, 
+  insertInvitationSchema, 
+  insertMessageSchema, 
+  insertConversationSchema, 
+  insertSavedRestaurantSchema,
+  insertFriendSchema,
+  insertDiningCircleSchema,
+  insertDiningCircleMemberSchema,
+  insertUserAvailabilitySchema,
+  insertRestaurantRecommendationSchema
+} from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { nanoid } from "nanoid";
@@ -577,6 +588,456 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err) {
       console.error("Error fetching restaurant overlap:", err);
       res.status(500).json({ message: "Failed to fetch restaurant overlap" });
+    }
+  });
+
+  // Friend routes
+  app.get("/api/friends", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const friends = await storage.getUserFriends(req.user.id);
+      res.json(friends);
+    } catch (err) {
+      console.error("Error fetching friends:", err);
+      res.status(500).json({ message: "Failed to fetch friends" });
+    }
+  });
+
+  app.get("/api/friend-requests", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const friendRequests = await storage.getUserFriendRequests(req.user.id);
+      res.json(friendRequests);
+    } catch (err) {
+      console.error("Error fetching friend requests:", err);
+      res.status(500).json({ message: "Failed to fetch friend requests" });
+    }
+  });
+
+  app.post("/api/friends", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const { friendId } = req.body;
+      
+      if (!friendId) {
+        return res.status(400).json({ message: "Friend ID is required" });
+      }
+      
+      // Check if friend exists
+      const friend = await storage.getUser(parseInt(friendId));
+      if (!friend) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Check if friendship already exists
+      const existingFriendship = await storage.getFriendshipByUsers(req.user.id, parseInt(friendId));
+      if (existingFriendship) {
+        return res.status(409).json({ 
+          message: "Friendship already exists", 
+          friendship: existingFriendship 
+        });
+      }
+      
+      // Create friendship request
+      const validatedData = insertFriendSchema.parse({
+        userId: req.user.id,
+        friendId: parseInt(friendId),
+        status: 'pending'
+      });
+      
+      const newFriendship = await storage.createFriend(validatedData);
+      res.status(201).json(newFriendship);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        const validationError = fromZodError(err);
+        return res.status(400).json({ message: validationError.message });
+      }
+      console.error("Error sending friend request:", err);
+      res.status(500).json({ message: "Failed to send friend request" });
+    }
+  });
+
+  app.patch("/api/friends/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      
+      if (!status || !["accepted", "declined"].includes(status)) {
+        return res.status(400).json({ message: "Invalid status" });
+      }
+      
+      // Get the friendship
+      const friendship = await storage.getFriend(parseInt(id));
+      if (!friendship) {
+        return res.status(404).json({ message: "Friend request not found" });
+      }
+      
+      // Check if the user is the recipient of the friend request
+      if (friendship.friendId !== req.user.id) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      // Update friendship status
+      const updatedFriendship = await storage.updateFriendStatus(parseInt(id), status);
+      res.json(updatedFriendship);
+    } catch (err) {
+      console.error("Error updating friend request:", err);
+      res.status(500).json({ message: "Failed to update friend request" });
+    }
+  });
+
+  app.delete("/api/friends/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const { id } = req.params;
+      
+      // Get the friendship
+      const friendship = await storage.getFriend(parseInt(id));
+      if (!friendship) {
+        return res.status(404).json({ message: "Friendship not found" });
+      }
+      
+      // Check if the user is part of this friendship
+      if (friendship.userId !== req.user.id && friendship.friendId !== req.user.id) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      // Delete the friendship
+      const success = await storage.deleteFriend(parseInt(id));
+      
+      if (success) {
+        res.status(200).json({ message: "Friendship deleted successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to delete friendship" });
+      }
+    } catch (err) {
+      console.error("Error deleting friendship:", err);
+      res.status(500).json({ message: "Failed to delete friendship" });
+    }
+  });
+
+  // Dining Circle routes
+  app.get("/api/dining-circles", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const diningCircles = await storage.getUserDiningCircles(req.user.id);
+      res.json(diningCircles);
+    } catch (err) {
+      console.error("Error fetching dining circles:", err);
+      res.status(500).json({ message: "Failed to fetch dining circles" });
+    }
+  });
+
+  app.post("/api/dining-circles", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      // Validate the request body
+      const validatedData = insertDiningCircleSchema.parse({
+        ...req.body,
+        createdBy: req.user.id
+      });
+      
+      const newDiningCircle = await storage.createDiningCircle(validatedData);
+      res.status(201).json(newDiningCircle);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        const validationError = fromZodError(err);
+        return res.status(400).json({ message: validationError.message });
+      }
+      console.error("Error creating dining circle:", err);
+      res.status(500).json({ message: "Failed to create dining circle" });
+    }
+  });
+
+  app.get("/api/dining-circles/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const { id } = req.params;
+      
+      // Get the dining circle
+      const diningCircle = await storage.getDiningCircle(parseInt(id));
+      if (!diningCircle) {
+        return res.status(404).json({ message: "Dining circle not found" });
+      }
+      
+      // Check if the user is a member of this circle or if the circle is public
+      const members = await storage.getDiningCircleMembers(parseInt(id));
+      const isMember = members.some(member => member.user.id === req.user.id);
+      
+      if (!isMember && diningCircle.isPrivate) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      // Get the members
+      res.json({
+        ...diningCircle,
+        members
+      });
+    } catch (err) {
+      console.error("Error fetching dining circle:", err);
+      res.status(500).json({ message: "Failed to fetch dining circle" });
+    }
+  });
+
+  app.post("/api/dining-circles/:id/members", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const { id } = req.params;
+      const { userId, role = 'member' } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ message: "User ID is required" });
+      }
+      
+      // Check if dining circle exists
+      const diningCircle = await storage.getDiningCircle(parseInt(id));
+      if (!diningCircle) {
+        return res.status(404).json({ message: "Dining circle not found" });
+      }
+      
+      // Check if the current user is an admin of this circle
+      const members = await storage.getDiningCircleMembers(parseInt(id));
+      const currentUserMembership = members.find(member => member.user.id === req.user.id);
+      
+      if (!currentUserMembership || currentUserMembership.role !== 'admin') {
+        return res.status(403).json({ message: "Only admins can add members" });
+      }
+      
+      // Check if user already a member
+      const isAlreadyMember = members.some(member => member.user.id === parseInt(userId));
+      if (isAlreadyMember) {
+        return res.status(409).json({ message: "User is already a member of this circle" });
+      }
+      
+      // Add the member
+      const validatedData = insertDiningCircleMemberSchema.parse({
+        diningCircleId: parseInt(id),
+        userId: parseInt(userId),
+        role
+      });
+      
+      const newMember = await storage.addDiningCircleMember(validatedData);
+      
+      // Get the user details
+      const user = await storage.getUser(parseInt(userId));
+      
+      res.status(201).json({
+        ...newMember,
+        user
+      });
+    } catch (err) {
+      if (err instanceof ZodError) {
+        const validationError = fromZodError(err);
+        return res.status(400).json({ message: validationError.message });
+      }
+      console.error("Error adding member to dining circle:", err);
+      res.status(500).json({ message: "Failed to add member to dining circle" });
+    }
+  });
+
+  app.delete("/api/dining-circles/:circleId/members/:userId", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const { circleId, userId } = req.params;
+      
+      // Check if dining circle exists
+      const diningCircle = await storage.getDiningCircle(parseInt(circleId));
+      if (!diningCircle) {
+        return res.status(404).json({ message: "Dining circle not found" });
+      }
+      
+      // Check if the current user is an admin or the user being removed
+      const members = await storage.getDiningCircleMembers(parseInt(circleId));
+      const currentUserMembership = members.find(member => member.user.id === req.user.id);
+      
+      const isAdmin = currentUserMembership?.role === 'admin';
+      const isSelfRemoval = req.user.id === parseInt(userId);
+      
+      if (!isAdmin && !isSelfRemoval) {
+        return res.status(403).json({ message: "Only admins can remove members" });
+      }
+      
+      // Remove the member
+      const success = await storage.removeDiningCircleMember(parseInt(circleId), parseInt(userId));
+      
+      if (success) {
+        res.status(200).json({ message: "Member removed successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to remove member" });
+      }
+    } catch (err) {
+      console.error("Error removing member from dining circle:", err);
+      res.status(500).json({ message: "Failed to remove member from dining circle" });
+    }
+  });
+
+  // User Availability routes
+  app.get("/api/availability/current", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const availability = await storage.getCurrentUserAvailability(req.user.id);
+      res.json(availability || { active: false });
+    } catch (err) {
+      console.error("Error fetching current availability:", err);
+      res.status(500).json({ message: "Failed to fetch current availability" });
+    }
+  });
+
+  app.get("/api/availability/history", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const availabilities = await storage.getUserAvailabilities(req.user.id);
+      res.json(availabilities);
+    } catch (err) {
+      console.error("Error fetching availability history:", err);
+      res.status(500).json({ message: "Failed to fetch availability history" });
+    }
+  });
+
+  app.post("/api/availability", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      // Validate the request body
+      const validatedData = insertUserAvailabilitySchema.parse({
+        ...req.body,
+        userId: req.user.id
+      });
+      
+      const newAvailability = await storage.createUserAvailability(validatedData);
+      res.status(201).json(newAvailability);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        const validationError = fromZodError(err);
+        return res.status(400).json({ message: validationError.message });
+      }
+      console.error("Error creating availability:", err);
+      res.status(500).json({ message: "Failed to create availability" });
+    }
+  });
+
+  app.patch("/api/availability/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const { id } = req.params;
+      
+      // Get the availability
+      const availability = await storage.getUserAvailability(parseInt(id));
+      if (!availability) {
+        return res.status(404).json({ message: "Availability not found" });
+      }
+      
+      // Check if the user owns this availability
+      if (availability.userId !== req.user.id) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      // Update the availability
+      const updatedAvailability = await storage.updateUserAvailability(parseInt(id), req.body);
+      res.json(updatedAvailability);
+    } catch (err) {
+      console.error("Error updating availability:", err);
+      res.status(500).json({ message: "Failed to update availability" });
+    }
+  });
+
+  app.get("/api/availability/nearby", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const { lat, lng, radius = 10 } = req.query;
+      
+      if (!lat || !lng) {
+        return res.status(400).json({ message: "Latitude and longitude are required" });
+      }
+      
+      const availableUsers = await storage.getAvailableUsersNearby(
+        lat as string, 
+        lng as string, 
+        parseInt(radius as string)
+      );
+      
+      // Remove the current user from results
+      const filteredUsers = availableUsers.filter(item => item.user.id !== req.user.id);
+      
+      // Sanitize user data (remove passwords)
+      const sanitizedResults = filteredUsers.map(item => {
+        const { password, ...rest } = item.user;
+        return {
+          ...item,
+          user: rest
+        };
+      });
+      
+      res.json(sanitizedResults);
+    } catch (err) {
+      console.error("Error fetching nearby available users:", err);
+      res.status(500).json({ message: "Failed to fetch nearby available users" });
+    }
+  });
+
+  // Restaurant Recommendation routes
+  app.get("/api/recommendations", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const recommendations = await storage.getUserRecommendations(req.user.id);
+      res.json(recommendations);
+    } catch (err) {
+      console.error("Error fetching recommendations:", err);
+      res.status(500).json({ message: "Failed to fetch recommendations" });
+    }
+  });
+
+  app.post("/api/recommendations/generate", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const recommendations = await storage.generateRecommendationsForUser(req.user.id);
+      res.json(recommendations);
+    } catch (err) {
+      console.error("Error generating recommendations:", err);
+      res.status(500).json({ message: "Failed to generate recommendations" });
+    }
+  });
+
+  app.patch("/api/recommendations/:id/viewed", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+      const { id } = req.params;
+      
+      // Get the recommendation
+      const recommendation = await storage.getRestaurantRecommendation(parseInt(id));
+      if (!recommendation) {
+        return res.status(404).json({ message: "Recommendation not found" });
+      }
+      
+      // Check if the user owns this recommendation
+      if (recommendation.userId !== req.user.id) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      // Mark as viewed
+      const updatedRecommendation = await storage.markRecommendationAsViewed(parseInt(id));
+      res.json(updatedRecommendation);
+    } catch (err) {
+      console.error("Error marking recommendation as viewed:", err);
+      res.status(500).json({ message: "Failed to mark recommendation as viewed" });
     }
   });
 
