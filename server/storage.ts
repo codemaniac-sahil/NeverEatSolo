@@ -519,6 +519,268 @@ export class DatabaseStorage implements IStorage {
     return event;
   }
   
+  // Private Dining Room methods
+  async getPrivateDiningRoom(id: number): Promise<PrivateDiningRoom | undefined> {
+    const [room] = await db
+      .select()
+      .from(privateDiningRooms)
+      .where(eq(privateDiningRooms.id, id));
+    
+    return room;
+  }
+
+  async getPrivateDiningRoomsByRestaurant(restaurantId: number): Promise<PrivateDiningRoom[]> {
+    return db
+      .select()
+      .from(privateDiningRooms)
+      .where(eq(privateDiningRooms.restaurantId, restaurantId));
+  }
+
+  async createPrivateDiningRoom(data: InsertPrivateDiningRoom): Promise<PrivateDiningRoom> {
+    const [room] = await db
+      .insert(privateDiningRooms)
+      .values(data)
+      .returning();
+    
+    return room;
+  }
+
+  async updatePrivateDiningRoom(id: number, data: Partial<PrivateDiningRoom>): Promise<PrivateDiningRoom | undefined> {
+    const [updatedRoom] = await db
+      .update(privateDiningRooms)
+      .set(data)
+      .where(eq(privateDiningRooms.id, id))
+      .returning();
+    
+    return updatedRoom;
+  }
+
+  async deletePrivateDiningRoom(id: number): Promise<boolean> {
+    const result = await db
+      .delete(privateDiningRooms)
+      .where(eq(privateDiningRooms.id, id));
+    
+    return result.rowCount > 0;
+  }
+  
+  // Special Event methods
+  async getSpecialEvent(id: number): Promise<SpecialEvent | undefined> {
+    const [event] = await db
+      .select()
+      .from(specialEvents)
+      .where(eq(specialEvents.id, id));
+    
+    return event;
+  }
+
+  async getUserHostedSpecialEvents(userId: number): Promise<SpecialEvent[]> {
+    return db
+      .select()
+      .from(specialEvents)
+      .where(eq(specialEvents.hostId, userId));
+  }
+
+  async getUserAttendingSpecialEvents(userId: number): Promise<(SpecialEventAttendee & { event: SpecialEvent })[]> {
+    const attendeeEvents = await db
+      .select({
+        id: specialEventAttendees.id,
+        eventId: specialEventAttendees.eventId,
+        userId: specialEventAttendees.userId,
+        status: specialEventAttendees.status,
+        registeredAt: specialEventAttendees.registeredAt,
+        event: specialEvents
+      })
+      .from(specialEventAttendees)
+      .innerJoin(specialEvents, eq(specialEventAttendees.eventId, specialEvents.id))
+      .where(eq(specialEventAttendees.userId, userId));
+    
+    return attendeeEvents;
+  }
+
+  async createSpecialEvent(data: InsertSpecialEvent): Promise<SpecialEvent> {
+    const [event] = await db
+      .insert(specialEvents)
+      .values(data)
+      .returning();
+    
+    return event;
+  }
+
+  async updateSpecialEvent(id: number, data: Partial<SpecialEvent>): Promise<SpecialEvent | undefined> {
+    const [updatedEvent] = await db
+      .update(specialEvents)
+      .set(data)
+      .where(eq(specialEvents.id, id))
+      .returning();
+    
+    return updatedEvent;
+  }
+
+  async deleteSpecialEvent(id: number): Promise<boolean> {
+    const result = await db
+      .delete(specialEvents)
+      .where(eq(specialEvents.id, id));
+    
+    return result.rowCount > 0;
+  }
+
+  async getSpecialEventAttendees(eventId: number): Promise<(SpecialEventAttendee & { user: User })[]> {
+    const attendeesWithUsers = await db
+      .select({
+        id: specialEventAttendees.id,
+        eventId: specialEventAttendees.eventId,
+        userId: specialEventAttendees.userId,
+        status: specialEventAttendees.status,
+        registeredAt: specialEventAttendees.registeredAt,
+        user: users
+      })
+      .from(specialEventAttendees)
+      .innerJoin(users, eq(specialEventAttendees.userId, users.id))
+      .where(eq(specialEventAttendees.eventId, eventId));
+    
+    return attendeesWithUsers;
+  }
+
+  async addSpecialEventAttendee(data: InsertSpecialEventAttendee): Promise<SpecialEventAttendee> {
+    const [attendee] = await db
+      .insert(specialEventAttendees)
+      .values(data)
+      .returning();
+    
+    return attendee;
+  }
+
+  async removeSpecialEventAttendee(eventId: number, userId: number): Promise<boolean> {
+    const result = await db
+      .delete(specialEventAttendees)
+      .where(
+        and(
+          eq(specialEventAttendees.eventId, eventId),
+          eq(specialEventAttendees.userId, userId)
+        )
+      );
+    
+    return result.rowCount > 0;
+  }
+  
+  // Team Building Activity methods
+  async getTeamBuildingActivity(id: number): Promise<TeamBuildingActivity | undefined> {
+    const [activity] = await db
+      .select()
+      .from(teamBuildingActivities)
+      .where(eq(teamBuildingActivities.id, id));
+    
+    return activity;
+  }
+
+  async getTeamBuildingActivitiesByTeam(teamId: number): Promise<TeamBuildingActivity[]> {
+    return db
+      .select()
+      .from(teamBuildingActivities)
+      .where(eq(teamBuildingActivities.teamId, teamId));
+  }
+
+  async createTeamBuildingActivity(data: InsertTeamBuildingActivity): Promise<TeamBuildingActivity> {
+    const [activity] = await db
+      .insert(teamBuildingActivities)
+      .values(data)
+      .returning();
+    
+    return activity;
+  }
+
+  async updateTeamBuildingActivity(id: number, data: Partial<TeamBuildingActivity>): Promise<TeamBuildingActivity | undefined> {
+    const [updatedActivity] = await db
+      .update(teamBuildingActivities)
+      .set(data)
+      .where(eq(teamBuildingActivities.id, id))
+      .returning();
+    
+    return updatedActivity;
+  }
+
+  async deleteTeamBuildingActivity(id: number): Promise<boolean> {
+    const result = await db
+      .delete(teamBuildingActivities)
+      .where(eq(teamBuildingActivities.id, id));
+    
+    return result.rowCount > 0;
+  }
+  
+  // Travel Profile methods
+  async getTravelProfile(userId: number): Promise<TravelProfile | undefined> {
+    const [profile] = await db
+      .select()
+      .from(travelProfiles)
+      .where(eq(travelProfiles.userId, userId));
+    
+    return profile;
+  }
+
+  async createTravelProfile(data: InsertTravelProfile): Promise<TravelProfile> {
+    const [profile] = await db
+      .insert(travelProfiles)
+      .values(data)
+      .returning();
+    
+    return profile;
+  }
+
+  async updateTravelProfile(userId: number, data: Partial<TravelProfile>): Promise<TravelProfile | undefined> {
+    const [updatedProfile] = await db
+      .update(travelProfiles)
+      .set(data)
+      .where(eq(travelProfiles.userId, userId))
+      .returning();
+    
+    return updatedProfile;
+  }
+
+  async deleteTravelProfile(userId: number): Promise<boolean> {
+    const result = await db
+      .delete(travelProfiles)
+      .where(eq(travelProfiles.userId, userId));
+    
+    return result.rowCount > 0;
+  }
+
+  async getUsersInTravelMode(lat: string, lng: string, radius: number): Promise<(TravelProfile & { user: User })[]> {
+    // This is a simplified version that just returns all travel profiles
+    // In a real implementation, you would use a GeoSpatial query to filter by location
+    const travelerProfiles = await db
+      .select({
+        id: travelProfiles.id,
+        userId: travelProfiles.userId,
+        destination: travelProfiles.destination,
+        startDate: travelProfiles.startDate,
+        endDate: travelProfiles.endDate,
+        locationLat: travelProfiles.locationLat,
+        locationLng: travelProfiles.locationLng,
+        travelPreferences: travelProfiles.travelPreferences,
+        upcomingTrips: travelProfiles.upcomingTrips,
+        preferredMeetingTimes: travelProfiles.preferredMeetingTimes,
+        createdAt: travelProfiles.createdAt,
+        lastUpdated: travelProfiles.lastUpdated,
+        user: users
+      })
+      .from(travelProfiles)
+      .innerJoin(users, eq(travelProfiles.userId, users.id));
+    
+    // Filter results to match the current location and active travel dates
+    const today = new Date();
+    const filteredResults = travelerProfiles.filter(profile => {
+      // Check if profile has start and end dates and they include the current date
+      const isActiveTrip = profile.startDate && profile.endDate && 
+        profile.startDate <= today && profile.endDate >= today;
+        
+      // In a real implementation, we would calculate distance between lat/lng here
+      // For now, we'll just return all active travel profiles
+      return isActiveTrip;
+    });
+    
+    return filteredResults;
+  }
+  
   // Messaging methods
   async getConversations(userId: number): Promise<(Conversation & { otherUser: User, lastMessage: Message | null })[]> {
     // Find all conversations where user is either user1 or user2

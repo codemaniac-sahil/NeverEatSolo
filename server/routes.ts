@@ -1565,6 +1565,259 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Premium features routes
+  
+  // Private Dining Room routes
+  app.get("/api/private-dining-rooms", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    
+    try {
+      const { restaurantId } = req.query;
+      
+      if (!restaurantId) {
+        return res.status(400).json({ message: "Restaurant ID is required" });
+      }
+      
+      const rooms = await storage.getPrivateDiningRoomsByRestaurant(parseInt(restaurantId as string));
+      res.json(rooms);
+    } catch (err) {
+      console.error("Error fetching private dining rooms:", err);
+      res.status(500).json({ message: "Failed to fetch private dining rooms" });
+    }
+  });
+  
+  app.post("/api/private-dining-rooms", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    
+    try {
+      // Validate the request body
+      const validatedData = insertPrivateDiningRoomSchema.parse(req.body);
+      const newRoom = await storage.createPrivateDiningRoom(validatedData);
+      res.status(201).json(newRoom);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        const validationError = fromZodError(err);
+        return res.status(400).json({ message: validationError.message });
+      }
+      console.error("Error creating private dining room:", err);
+      res.status(500).json({ message: "Failed to create private dining room" });
+    }
+  });
+  
+  // Special Event routes
+  app.get("/api/special-events", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    
+    try {
+      const userEvents = await storage.getUserHostedSpecialEvents(req.user.id);
+      res.json(userEvents);
+    } catch (err) {
+      console.error("Error fetching special events:", err);
+      res.status(500).json({ message: "Failed to fetch special events" });
+    }
+  });
+  
+  app.get("/api/special-events/attending", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    
+    try {
+      const attendingEvents = await storage.getUserAttendingSpecialEvents(req.user.id);
+      res.json(attendingEvents);
+    } catch (err) {
+      console.error("Error fetching attending events:", err);
+      res.status(500).json({ message: "Failed to fetch attending events" });
+    }
+  });
+  
+  app.post("/api/special-events", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    
+    try {
+      // Validate the request body
+      const validatedData = insertSpecialEventSchema.parse({
+        ...req.body,
+        hostId: req.user.id
+      });
+      const newEvent = await storage.createSpecialEvent(validatedData);
+      res.status(201).json(newEvent);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        const validationError = fromZodError(err);
+        return res.status(400).json({ message: validationError.message });
+      }
+      console.error("Error creating special event:", err);
+      res.status(500).json({ message: "Failed to create special event" });
+    }
+  });
+  
+  app.get("/api/special-events/:id/attendees", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    
+    try {
+      const { id } = req.params;
+      const attendees = await storage.getSpecialEventAttendees(parseInt(id));
+      res.json(attendees);
+    } catch (err) {
+      console.error("Error fetching special event attendees:", err);
+      res.status(500).json({ message: "Failed to fetch special event attendees" });
+    }
+  });
+  
+  app.post("/api/special-events/:id/attendees", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    
+    try {
+      const { id } = req.params;
+      
+      // Validate the request body
+      const validatedData = insertSpecialEventAttendeeSchema.parse({
+        eventId: parseInt(id),
+        userId: req.user.id,
+        ...req.body
+      });
+      
+      const newAttendee = await storage.addSpecialEventAttendee(validatedData);
+      res.status(201).json(newAttendee);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        const validationError = fromZodError(err);
+        return res.status(400).json({ message: validationError.message });
+      }
+      console.error("Error adding attendee to special event:", err);
+      res.status(500).json({ message: "Failed to add attendee to special event" });
+    }
+  });
+  
+  // Team Building Activity routes
+  app.get("/api/teams/:teamId/activities", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    
+    try {
+      const { teamId } = req.params;
+      const activities = await storage.getTeamBuildingActivitiesByTeam(parseInt(teamId));
+      res.json(activities);
+    } catch (err) {
+      console.error("Error fetching team building activities:", err);
+      res.status(500).json({ message: "Failed to fetch team building activities" });
+    }
+  });
+  
+  app.post("/api/team-building-activities", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    
+    try {
+      // Validate the request body
+      const validatedData = insertTeamBuildingActivitySchema.parse({
+        ...req.body,
+        createdBy: req.user.id
+      });
+      
+      const newActivity = await storage.createTeamBuildingActivity(validatedData);
+      res.status(201).json(newActivity);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        const validationError = fromZodError(err);
+        return res.status(400).json({ message: validationError.message });
+      }
+      console.error("Error creating team building activity:", err);
+      res.status(500).json({ message: "Failed to create team building activity" });
+    }
+  });
+  
+  // Travel Profile routes
+  app.get("/api/travel-profile", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    
+    try {
+      const profile = await storage.getTravelProfile(req.user.id);
+      
+      if (!profile) {
+        return res.status(404).json({ message: "Travel profile not found" });
+      }
+      
+      res.json(profile);
+    } catch (err) {
+      console.error("Error fetching travel profile:", err);
+      res.status(500).json({ message: "Failed to fetch travel profile" });
+    }
+  });
+  
+  app.post("/api/travel-profile", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    
+    try {
+      // Check if profile already exists
+      const existingProfile = await storage.getTravelProfile(req.user.id);
+      
+      if (existingProfile) {
+        return res.status(409).json({ 
+          message: "Travel profile already exists, use PATCH to update", 
+          profile: existingProfile 
+        });
+      }
+      
+      // Validate the request body
+      const validatedData = insertTravelProfileSchema.parse({
+        ...req.body,
+        userId: req.user.id
+      });
+      
+      const newProfile = await storage.createTravelProfile(validatedData);
+      res.status(201).json(newProfile);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        const validationError = fromZodError(err);
+        return res.status(400).json({ message: validationError.message });
+      }
+      console.error("Error creating travel profile:", err);
+      res.status(500).json({ message: "Failed to create travel profile" });
+    }
+  });
+  
+  app.patch("/api/travel-profile", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    
+    try {
+      // Validate the request body
+      const updatedProfile = await storage.updateTravelProfile(req.user.id, req.body);
+      
+      if (!updatedProfile) {
+        return res.status(404).json({ message: "Travel profile not found" });
+      }
+      
+      res.json(updatedProfile);
+    } catch (err) {
+      console.error("Error updating travel profile:", err);
+      res.status(500).json({ message: "Failed to update travel profile" });
+    }
+  });
+  
+  app.get("/api/travel/nearby-users", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    
+    try {
+      const { lat, lng, radius = 10 } = req.query;
+      
+      if (!lat || !lng) {
+        return res.status(400).json({ message: "Latitude and longitude are required" });
+      }
+      
+      const travelers = await storage.getUsersInTravelMode(lat as string, lng as string, parseInt(radius as string));
+      
+      // Don't send user passwords
+      const sanitizedTravelers = travelers.map(item => {
+        const { user, ...travelProfile } = item;
+        const { password, ...sanitizedUser } = user;
+        return { ...travelProfile, user: sanitizedUser };
+      });
+      
+      res.json(sanitizedTravelers);
+    } catch (err) {
+      console.error("Error fetching nearby travelers:", err);
+      res.status(500).json({ message: "Failed to fetch nearby travelers" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
