@@ -83,19 +83,14 @@ export default function HomePage() {
     <div className="flex flex-col min-h-screen bg-zinc-950">
       <SiteHeader />
       
-      <div className="pt-20 pb-32 bg-zinc-900 relative overflow-hidden">
-        <div className="absolute inset-0 z-0 opacity-20">
-          <div className="absolute inset-0 bg-gradient-to-b from-black to-transparent"></div>
-          <div 
-            className="absolute inset-0 bg-cover bg-center" 
-            style={{
-              backgroundImage: `url('https://images.unsplash.com/photo-1559925393-8be0ec4767c8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2069&q=80')`
-            }}
-          ></div>
-        </div>
-        
+      <div className="pt-20 pb-16 bg-zinc-900 relative overflow-hidden">
         <div className="elegant-container relative z-10">
-          <div className="max-w-2xl">
+          {/* Hero Banner with Food Imagery */}
+          <div className="mb-10">
+            <HeroBanner />
+          </div>
+          
+          <div className="max-w-2xl mt-10">
             <h1 className="elegant-heading mb-4">
               Never Eat
               <br/>
