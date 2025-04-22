@@ -44,8 +44,10 @@ import {
   Mail,
   FileEdit,
   Save,
-  UtensilsCrossed
+  UtensilsCrossed,
+  Map
 } from "lucide-react";
+import LocationContext from "@/components/profile/location-context";
 import { 
   DIETARY_RESTRICTIONS, 
   CUISINE_PREFERENCES, 
@@ -207,13 +209,26 @@ export default function ProfilePage() {
               </CardHeader>
               <CardContent>
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  <TabsList className="grid w-full grid-cols-5">
+                  <TabsList className="grid w-full grid-cols-6">
                     <TabsTrigger value="general">General</TabsTrigger>
+                    <TabsTrigger value="location">
+                      <div className="flex items-center">
+                        <Map className="h-4 w-4 mr-1" />
+                        <span>Location</span>
+                      </div>
+                    </TabsTrigger>
                     <TabsTrigger value="preferences">Food Preferences</TabsTrigger>
                     <TabsTrigger value="history">Dining History</TabsTrigger>
                     <TabsTrigger value="verification">Verification</TabsTrigger>
                     <TabsTrigger value="integrations">Integrations</TabsTrigger>
                   </TabsList>
+                  
+                  {/* Location Context Tab */}
+                  <TabsContent value="location">
+                    <div className="space-y-6 p-4">
+                      <LocationContext />
+                    </div>
+                  </TabsContent>
                   
                   {/* General Information Tab */}
                   <TabsContent value="general">
