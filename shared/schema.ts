@@ -442,12 +442,19 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   teamMemberships: many(teamMembers, { relationName: "teamMember" }),
   createdEvents: many(corporateEvents, { relationName: "eventCreator" }),
   eventParticipations: many(eventParticipants, { relationName: "eventParticipant" }),
+  
+  // Premium features relations
+  hostedSpecialEvents: many(specialEvents),
+  specialEventAttendances: many(specialEventAttendees),
+  createdTeamBuildingActivities: many(teamBuildingActivities),
+  travelProfile: one(travelProfiles),
 }));
 
 export const restaurantsRelations = relations(restaurants, ({ many }) => ({
   invitations: many(invitations),
   savedBy: many(savedRestaurants),
   recommendations: many(restaurantRecommendations),
+  privateDiningRooms: many(privateDiningRooms), // Premium feature
 }));
 
 export const savedRestaurantsRelations = relations(savedRestaurants, ({ one }) => ({
@@ -520,6 +527,7 @@ export const teamsRelations = relations(teams, ({ one, many }) => ({
   manager: one(users, { fields: [teams.managerId], references: [users.id] }),
   members: many(teamMembers),
   events: many(corporateEvents),
+  teamBuildingActivities: many(teamBuildingActivities), // Premium feature
 }));
 
 export const workspacesRelations = relations(workspaces, ({ one, many }) => ({
@@ -749,3 +757,67 @@ export type InsertCorporateEvent = z.infer<typeof insertCorporateEventSchema>;
 
 export type EventParticipant = typeof eventParticipants.$inferSelect;
 export type InsertEventParticipant = z.infer<typeof insertEventParticipantSchema>;
+
+// Premium features schemas
+export const insertPrivateDiningRoomSchema = createInsertSchema(privateDiningRooms, {
+  amenities: z.array(z.string()).optional(),
+  availableTimeSlots: z.array(z.object({
+    day: z.string(),
+    slots: z.array(z.string())
+  })).optional(),
+  images: z.array(z.string()).optional(),
+}).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertSpecialEventSchema = createInsertSchema(specialEvents).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertSpecialEventAttendeeSchema = createInsertSchema(specialEventAttendees).omit({
+  registeredAt: true,
+});
+
+export const insertTeamBuildingActivitySchema = createInsertSchema(teamBuildingActivities, {
+  settings: z.record(z.any()).optional(),
+}).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertTravelProfileSchema = createInsertSchema(travelProfiles, {
+  travelPreferences: z.object({
+    meetLocals: z.boolean().optional(),
+    findFellowTravelers: z.boolean().optional(),
+    exploreCuisines: z.boolean().optional(),
+  }).optional(),
+  upcomingTrips: z.array(z.object({
+    destination: z.string(),
+    arrivalDate: z.string(),
+    departureDate: z.string(),
+    notes: z.string().optional(),
+  })).optional(),
+  preferredMeetingTimes: z.array(z.string()).optional(),
+}).omit({
+  id: true,
+  createdAt: true,
+  lastUpdated: true,
+});
+
+// Premium features types
+export type PrivateDiningRoom = typeof privateDiningRooms.$inferSelect;
+export type InsertPrivateDiningRoom = z.infer<typeof insertPrivateDiningRoomSchema>;
+
+export type SpecialEvent = typeof specialEvents.$inferSelect;
+export type InsertSpecialEvent = z.infer<typeof insertSpecialEventSchema>;
+
+export type SpecialEventAttendee = typeof specialEventAttendees.$inferSelect;
+export type InsertSpecialEventAttendee = z.infer<typeof insertSpecialEventAttendeeSchema>;
+
+export type TeamBuildingActivity = typeof teamBuildingActivities.$inferSelect;
+export type InsertTeamBuildingActivity = z.infer<typeof insertTeamBuildingActivitySchema>;
+
+export type TravelProfile = typeof travelProfiles.$inferSelect;
+export type InsertTravelProfile = z.infer<typeof insertTravelProfileSchema>;

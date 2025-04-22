@@ -18,7 +18,12 @@ import {
   workspaces, type Workspace, type InsertWorkspace,
   campusRestaurants, type CampusRestaurant, type InsertCampusRestaurant,
   corporateEvents, type CorporateEvent, type InsertCorporateEvent,
-  eventParticipants, type EventParticipant, type InsertEventParticipant
+  eventParticipants, type EventParticipant, type InsertEventParticipant,
+  privateDiningRooms, type PrivateDiningRoom, type InsertPrivateDiningRoom,
+  specialEvents, type SpecialEvent, type InsertSpecialEvent,
+  specialEventAttendees, type SpecialEventAttendee, type InsertSpecialEventAttendee,
+  teamBuildingActivities, type TeamBuildingActivity, type InsertTeamBuildingActivity,
+  travelProfiles, type TravelProfile, type InsertTravelProfile
 } from "@shared/schema";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -182,6 +187,38 @@ export interface IStorage {
   getUpcomingCorporateEvents(userId: number): Promise<CorporateEvent[]>;
   createCorporateEvent(event: InsertCorporateEvent): Promise<CorporateEvent>;
   
+  // Private Dining Room operations
+  getPrivateDiningRoom(id: number): Promise<PrivateDiningRoom | undefined>;
+  getPrivateDiningRoomsByRestaurant(restaurantId: number): Promise<PrivateDiningRoom[]>;
+  createPrivateDiningRoom(room: InsertPrivateDiningRoom): Promise<PrivateDiningRoom>;
+  updatePrivateDiningRoom(id: number, data: Partial<PrivateDiningRoom>): Promise<PrivateDiningRoom | undefined>;
+  deletePrivateDiningRoom(id: number): Promise<boolean>;
+  
+  // Special Event operations
+  getSpecialEvent(id: number): Promise<SpecialEvent | undefined>;
+  getUserHostedSpecialEvents(userId: number): Promise<SpecialEvent[]>;
+  getUserAttendingSpecialEvents(userId: number): Promise<(SpecialEventAttendee & { event: SpecialEvent })[]>;
+  createSpecialEvent(event: InsertSpecialEvent): Promise<SpecialEvent>;
+  updateSpecialEvent(id: number, data: Partial<SpecialEvent>): Promise<SpecialEvent | undefined>;
+  deleteSpecialEvent(id: number): Promise<boolean>;
+  getSpecialEventAttendees(eventId: number): Promise<(SpecialEventAttendee & { user: User })[]>;
+  addSpecialEventAttendee(attendee: InsertSpecialEventAttendee): Promise<SpecialEventAttendee>;
+  removeSpecialEventAttendee(eventId: number, userId: number): Promise<boolean>;
+  
+  // Team Building Activity operations
+  getTeamBuildingActivity(id: number): Promise<TeamBuildingActivity | undefined>;
+  getTeamBuildingActivitiesByTeam(teamId: number): Promise<TeamBuildingActivity[]>;
+  createTeamBuildingActivity(activity: InsertTeamBuildingActivity): Promise<TeamBuildingActivity>;
+  updateTeamBuildingActivity(id: number, data: Partial<TeamBuildingActivity>): Promise<TeamBuildingActivity | undefined>;
+  deleteTeamBuildingActivity(id: number): Promise<boolean>;
+  
+  // Travel Profile operations
+  getTravelProfile(userId: number): Promise<TravelProfile | undefined>;
+  createTravelProfile(profile: InsertTravelProfile): Promise<TravelProfile>;
+  updateTravelProfile(userId: number, data: Partial<TravelProfile>): Promise<TravelProfile | undefined>;
+  deleteTravelProfile(userId: number): Promise<boolean>;
+  getUsersInTravelMode(lat: string, lng: string, radius: number): Promise<(TravelProfile & { user: User })[]>;
+
   // Session store
   sessionStore: session.Store;
 }

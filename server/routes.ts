@@ -24,7 +24,13 @@ import {
   insertTeamMemberSchema,
   insertCampusRestaurantSchema,
   insertCorporateEventSchema,
-  insertEventParticipantSchema
+  insertEventParticipantSchema,
+  // Premium features schemas
+  insertPrivateDiningRoomSchema,
+  insertSpecialEventSchema,
+  insertSpecialEventAttendeeSchema,
+  insertTeamBuildingActivitySchema,
+  insertTravelProfileSchema
 } from "@shared/schema";
 import { nanoid } from "nanoid";
 
