@@ -10,6 +10,7 @@ import diningCouple2 from "@/assets/dining-couple2.png";
 import diningCouple3 from "@/assets/dining-couple3.png";
 import diningFriends1 from "@/assets/dining-friends1.png";
 import diningFriends2 from "@/assets/dining-friends2.png";
+import diningFriends3 from "@/assets/dining-friends3.png";
 
 interface HeroImage {
   url: string;
@@ -60,6 +61,12 @@ const heroImages: HeroImage[] = [
     alt: "Group of friends enjoying wine and food",
     title: "Join Social Dining Circles",
     subtitle: "Build your network while enjoying delicious meals in great company"
+  },
+  {
+    url: diningFriends3,
+    alt: "Stylish friends enjoying drinks together",
+    title: "Experience Vibrant Social Gatherings",
+    subtitle: "Meet new people in sophisticated settings and create lasting connections"
   }
 ];
 
