@@ -1,60 +1,75 @@
 import { useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
 import { useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
+import { useAuth } from "@/hooks/use-auth";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { 
+  Form, 
+  FormControl, 
+  FormDescription, 
+  FormField, 
+  FormItem, 
+  FormLabel, 
+  FormMessage 
+} from "@/components/ui/form";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
-import { Map, Home, Plane, Briefcase, MapPin } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { MapPin, Save } from "lucide-react";
 
 interface LocationContextData {
   locationContext: string;
   locationContextNote: string;
 }
 
+const locationContextSchema = z.object({
+  locationContext: z.enum(["local", "tourist", "visiting", "networking"]),
+  locationContextNote: z.string().max(500, {
+    message: "Notes must be less than 500 characters",
+  }).optional(),
+});
+
+type LocationContextFormValues = z.infer<typeof locationContextSchema>;
+
 export default function LocationContext() {
   const { user } = useAuth();
   const { toast } = useToast();
   
-  const [locationContext, setLocationContext] = useState<string>(
-    user?.locationContext || "local"
-  );
-  const [locationContextNote, setLocationContextNote] = useState<string>(
-    user?.locationContextNote || ""
-  );
-
+  const form = useForm<LocationContextFormValues>({
+    resolver: zodResolver(locationContextSchema),
+    defaultValues: {
+      locationContext: user?.locationContext as "local" | "tourist" | "visiting" | "networking" || "local",
+      locationContextNote: user?.locationContextNote || "",
+    },
+  });
+  
   const updateLocationContext = useMutation({
     mutationFn: async (data: LocationContextData) => {
-      if (!user) throw new Error("Not authenticated");
-      const res = await apiRequest("PATCH", `/api/users/${user.id}/location-context`, data);
-      return res.json();
+      const response = await apiRequest(
+        "PATCH",
+        `/api/users/${user?.id}/location-context`,
+        data
+      );
+      
+      return await response.json();
     },
     onSuccess: (data) => {
-      // Update the user data in the cache
-      queryClient.setQueryData(["/api/user"], {
-        ...user,
-        locationContext: data.locationContext,
-        locationContextNote: data.locationContextNote,
-      });
-      
       toast({
         title: "Location context updated",
-        description: "Your location information has been updated successfully.",
+        description: "Your location context has been successfully updated.",
+      });
+      
+      // Update the user query data
+      queryClient.setQueryData(["/api/user"], (oldData: any) => {
+        return {
+          ...oldData,
+          locationContext: data.locationContext,
+          locationContextNote: data.locationContextNote,
+        };
       });
     },
     onError: (error: Error) => {
@@ -63,126 +78,115 @@ export default function LocationContext() {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
-
-  const handleSubmit = () => {
-    updateLocationContext.mutate({
-      locationContext,
-      locationContextNote,
-    });
+  
+  function onSubmit(data: LocationContextFormValues) {
+    updateLocationContext.mutate(data);
+  }
+  
+  const contextDescriptions = {
+    local: "You're a local resident of the area",
+    tourist: "You're temporarily visiting for leisure or exploration",
+    visiting: "You're here for a specific purpose, like work or an event",
+    networking: "You're specifically looking for professional connections"
   };
-
-  const getContextIcon = (context: string) => {
-    switch (context) {
-      case 'local':
-        return <Home className="h-4 w-4" />;
-      case 'tourist':
-        return <Plane className="h-4 w-4" />;
-      case 'visiting':
-        return <MapPin className="h-4 w-4" />;
-      case 'networking':
-        return <Briefcase className="h-4 w-4" />;
-      default:
-        return <Map className="h-4 w-4" />;
-    }
-  };
-
-  const getContextLabel = (context: string) => {
-    switch (context) {
-      case 'local':
-        return "I live here";
-      case 'tourist':
-        return "I'm visiting as a tourist";
-      case 'visiting':
-        return "I'm visiting for work/other reasons";
-      case 'networking':
-        return "I'm looking to network";
-      default:
-        return "Other";
-    }
-  };
-
+  
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center">
-          <Map className="h-5 w-5 mr-2" />
-          <CardTitle>Location Context</CardTitle>
+    <div className="space-y-6">
+      <div className="flex items-center justify-center mb-8">
+        <div className="bg-primary/10 p-3 rounded-full">
+          <MapPin className="h-8 w-8 text-primary" />
         </div>
-        <CardDescription>
-          Let others know why you're in this area
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid gap-2">
-          <Label htmlFor="locationContext">Your reason for being here</Label>
-          <Select 
-            value={locationContext} 
-            onValueChange={setLocationContext}
-            disabled={updateLocationContext.isPending}
-          >
-            <SelectTrigger id="locationContext" className="flex items-center">
-              <span className="flex items-center">
-                {getContextIcon(locationContext)}
-                <span className="ml-2">{getContextLabel(locationContext)}</span>
-              </span>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="local" className="flex items-center">
-                <span className="flex items-center">
-                  <Home className="h-4 w-4 mr-2" />
-                  I live here
-                </span>
-              </SelectItem>
-              <SelectItem value="tourist">
-                <span className="flex items-center">
-                  <Plane className="h-4 w-4 mr-2" />
-                  I'm visiting as a tourist
-                </span>
-              </SelectItem>
-              <SelectItem value="visiting">
-                <span className="flex items-center">
-                  <MapPin className="h-4 w-4 mr-2" />
-                  I'm visiting for work/other reasons
-                </span>
-              </SelectItem>
-              <SelectItem value="networking">
-                <span className="flex items-center">
-                  <Briefcase className="h-4 w-4 mr-2" />
-                  I'm looking to network
-                </span>
-              </SelectItem>
-              <SelectItem value="other">
-                <span className="flex items-center">
-                  <Map className="h-4 w-4 mr-2" />
-                  Other
-                </span>
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="grid gap-2">
-          <Label htmlFor="locationContextNote">Additional notes (optional)</Label>
-          <Textarea
-            id="locationContextNote"
-            placeholder="Share more details about why you're in this area, e.g., 'Visiting for a conference until Friday'"
-            value={locationContextNote}
-            onChange={(e) => setLocationContextNote(e.target.value)}
-            disabled={updateLocationContext.isPending}
-            rows={3}
+      </div>
+      
+      <h3 className="text-lg font-medium text-center mb-4">
+        Your Location Context
+      </h3>
+      
+      <p className="text-center text-muted-foreground mb-8">
+        Let others know why you're in this location to help create more meaningful connections.
+      </p>
+      
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <FormField
+            control={form.control}
+            name="locationContext"
+            render={({ field }) => (
+              <FormItem className="space-y-3">
+                <FormLabel className="text-base">I am in this area as a:</FormLabel>
+                <FormControl>
+                  <RadioGroup
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                    className="flex flex-col space-y-3"
+                  >
+                    {Object.entries(contextDescriptions).map(([value, description]) => (
+                      <Card key={value} className={`border transition-colors ${field.value === value ? 'bg-muted border-primary' : ''}`}>
+                        <CardContent className="p-4">
+                          <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value={value} />
+                            </FormControl>
+                            <div className="flex flex-col">
+                              <FormLabel className="font-semibold capitalize">
+                                {value}
+                              </FormLabel>
+                              <FormDescription className="text-sm">
+                                {description}
+                              </FormDescription>
+                            </div>
+                          </FormItem>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </RadioGroup>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
-        </div>
-
-        <Button 
-          onClick={handleSubmit} 
-          disabled={updateLocationContext.isPending}
-          className="w-full"
-        >
-          {updateLocationContext.isPending ? "Updating..." : "Update Location Context"}
-        </Button>
-      </CardContent>
-    </Card>
+          
+          <FormField
+            control={form.control}
+            name="locationContextNote"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Additional Notes (Optional)</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Add more details about your location situation if you'd like..."
+                    className="resize-none min-h-24"
+                    {...field}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Share more context about why you're here or what you're looking for.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <div className="flex justify-end">
+            <Button 
+              type="submit" 
+              className="bg-primary hover:bg-primary/90"
+              disabled={updateLocationContext.isPending}
+            >
+              {updateLocationContext.isPending ? (
+                <>Saving...</>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Save Location Context
+                </>
+              )}
+            </Button>
+          </div>
+        </form>
+      </Form>
+    </div>
   );
 }

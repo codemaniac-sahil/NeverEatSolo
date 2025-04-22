@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
+import { registerLocationContextRoutes } from "./routes-location-context";
 import { 
   insertRestaurantSchema, 
   insertInvitationSchema, 
@@ -37,6 +38,9 @@ import { nanoid } from "nanoid";
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up auth routes (/api/register, /api/login, /api/logout, /api/user)
   setupAuth(app);
+  
+  // Register location context routes
+  registerLocationContextRoutes(app);
 
   // User related routes
   app.get("/api/users/nearby", async (req, res) => {
