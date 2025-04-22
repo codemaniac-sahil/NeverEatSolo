@@ -1895,9 +1895,19 @@ export class DatabaseStorage implements IStorage {
 
   async getInvitationsForUser(userId: number): Promise<Invitation[]> {
     try {
-      // Get accepted invitations for this user that are scheduled for today or in the future
+      // Explicitly select only the columns we need to avoid errors with schema mismatches
       return await db
-        .select()
+        .select({
+          id: invitations.id,
+          senderId: invitations.senderId,
+          receiverId: invitations.receiverId,
+          restaurantId: invitations.restaurantId,
+          date: invitations.date,
+          time: invitations.time,
+          message: invitations.message,
+          status: invitations.status,
+          createdAt: invitations.createdAt
+        })
         .from(invitations)
         .where(
           and(

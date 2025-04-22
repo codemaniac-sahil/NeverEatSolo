@@ -70,6 +70,8 @@ export const users = pgTable("users", {
   diningStyles: json("dining_styles").$type<string[]>().default([]),
   locationLat: text("location_lat"),
   locationLng: text("location_lng"),
+  locationContext: text("location_context").default("local"), // local, tourist, visiting, networking, other
+  locationContextNote: text("location_context_note"), // Additional notes about their location context
   lastActive: timestamp("last_active").defaultNow().notNull(),
   // Microsoft integration fields
   microsoftId: text("microsoft_id"),
