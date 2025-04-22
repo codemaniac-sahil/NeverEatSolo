@@ -1,0 +1,139 @@
+import { useState, useEffect } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+// Import food imagery assets
+import foodImage1 from "@/assets/food-image1.png";
+import foodImage2 from "@/assets/food-image2.png";
+// In a real application we would have more images
+// These are placeholders for now
+
+interface HeroImage {
+  url: string;
+  alt: string;
+  title: string;
+  subtitle: string;
+}
+
+const heroImages: HeroImage[] = [
+  {
+    url: foodImage1,
+    alt: "Sushi dish with chopsticks",
+    title: "Discover Culinary Connections",
+    subtitle: "Find your perfect dining companion and explore new flavors together"
+  },
+  {
+    url: foodImage2,
+    alt: "Modern restaurant interior",
+    title: "Share Meaningful Conversations",
+    subtitle: "Connect over amazing food in beautiful settings around the city"
+  },
+  // In a real app, we would include 5-6 more images to achieve the 7-8 total requested
+  // For now we're using the two provided images as examples
+];
+
+export default function HeroBanner() {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+
+  // Auto-rotate images every 5 seconds
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (isAutoPlaying) {
+      interval = setInterval(() => {
+        setCurrentIndex((prevIndex) => (prevIndex + 1) % heroImages.length);
+      }, 5000);
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isAutoPlaying]);
+
+  // Pause auto-rotation when user interacts
+  const handleManualNavigation = (index: number) => {
+    setCurrentIndex(index);
+    setIsAutoPlaying(false);
+    
+    // Resume auto-rotation after 10 seconds of inactivity
+    const timeout = setTimeout(() => {
+      setIsAutoPlaying(true);
+    }, 10000);
+    
+    return () => clearTimeout(timeout);
+  };
+
+  const goToPrevious = () => {
+    const newIndex = currentIndex === 0 ? heroImages.length - 1 : currentIndex - 1;
+    handleManualNavigation(newIndex);
+  };
+
+  const goToNext = () => {
+    const newIndex = (currentIndex + 1) % heroImages.length;
+    handleManualNavigation(newIndex);
+  };
+
+  return (
+    <div className="relative w-full h-[400px] md:h-[500px] overflow-hidden rounded-lg">
+      {/* Hero Images */}
+      <div className="relative w-full h-full">
+        {heroImages.map((image, index) => (
+          <div
+            key={index}
+            className={`absolute inset-0 transition-opacity duration-1000 ${
+              index === currentIndex ? "opacity-100" : "opacity-0 pointer-events-none"
+            }`}
+          >
+            <img
+              src={image.url}
+              alt={image.alt}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+            <div className="absolute bottom-0 left-0 p-6 md:p-8 text-white max-w-md">
+              <h2 className="text-2xl md:text-3xl font-bold mb-2">{image.title}</h2>
+              <p className="text-sm md:text-base opacity-90">{image.subtitle}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Navigation Controls */}
+      <div className="absolute bottom-4 right-4 flex items-center space-x-2">
+        <Button
+          variant="outline"
+          size="icon"
+          className="bg-black/30 border-white/20 hover:bg-black/50 text-white"
+          onClick={goToPrevious}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          className="bg-black/30 border-white/20 hover:bg-black/50 text-white"
+          onClick={goToNext}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* Indicator Dots */}
+      <div className="absolute bottom-4 left-0 right-0 flex justify-center space-x-2">
+        {heroImages.map((_, index) => (
+          <button
+            key={index}
+            className={`w-2 h-2 rounded-full transition-all ${
+              index === currentIndex
+                ? "bg-white w-4"
+                : "bg-white/50 hover:bg-white/80"
+            }`}
+            onClick={() => handleManualNavigation(index)}
+            aria-label={`View slide ${index + 1}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}

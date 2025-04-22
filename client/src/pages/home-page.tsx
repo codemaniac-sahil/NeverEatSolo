@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import SiteHeader from "@/components/layout/site-header";
 import MobileNav from "@/components/layout/mobile-nav";
+import HeroBanner from "@/components/layout/hero-banner";
 import NearbyUsers from "@/components/dining/nearby-users-new";
 import NearbyRestaurants from "@/components/dining/nearby-restaurants";
 import SavedRestaurants from "@/components/dining/saved-restaurants";
