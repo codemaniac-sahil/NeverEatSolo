@@ -124,7 +124,7 @@ export const invitations = pgTable("invitations", {
   lastCalendarSync: timestamp("last_calendar_sync"),
 });
 
-// Messages model
+// Messages model with advanced features
 export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
   senderId: integer("sender_id").notNull().references(() => users.id),
@@ -133,6 +133,15 @@ export const messages = pgTable("messages", {
   isRead: boolean("is_read").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   conversationId: text("conversation_id").notNull(),
+  // Advanced messaging features
+  messageType: text("message_type").default("text").notNull(), // text, image, voice, location, invitation
+  attachmentUrl: text("attachment_url"), // URL to any attached media
+  reactionEmojis: json("reaction_emojis").$type<{ [userId: string]: string }>().default({}),
+  isEdited: boolean("is_edited").default(false),
+  editHistory: json("edit_history").$type<{ content: string, timestamp: string }[]>().default([]),
+  deliveryStatus: text("delivery_status").default("sent").notNull(), // sent, delivered, seen
+  readAt: timestamp("read_at"),
+  replyToMessageId: integer("reply_to_message_id"), // For threaded replies
 });
 
 // Conversations model (to group messages between two users)
@@ -247,6 +256,91 @@ export const eventParticipants = pgTable("event_participants", {
 }, (t) => ({
   pk: primaryKey({ columns: [t.eventId, t.userId] })
 }));
+
+// Premium Features: Private Dining Rooms
+export const privateDiningRooms = pgTable("private_dining_rooms", {
+  id: serial("id").primaryKey(),
+  restaurantId: integer("restaurant_id").notNull().references(() => restaurants.id),
+  name: text("name").notNull(),
+  description: text("description"),
+  capacity: integer("capacity").notNull(),
+  pricePerHour: integer("price_per_hour"), // in cents
+  amenities: json("amenities").$type<string[]>().default([]),
+  availableTimeSlots: json("available_time_slots").$type<{ day: string, slots: string[] }[]>().default([]),
+  images: json("images").$type<string[]>().default([]),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Premium Features: Special Events
+export const specialEvents = pgTable("special_events", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  locationName: text("location_name").notNull(),
+  address: text("address").notNull(),
+  locationLat: text("location_lat"),
+  locationLng: text("location_lng"),
+  startTime: timestamp("start_time").notNull(),
+  endTime: timestamp("end_time").notNull(),
+  maxAttendees: integer("max_attendees"),
+  cost: integer("cost"), // in cents, can be 0 for free events
+  eventType: text("event_type").notNull(), // tasting, cooking_class, food_tour, etc.
+  hostId: integer("host_id").notNull().references(() => users.id),
+  isPublic: boolean("is_public").default(true).notNull(),
+  requiresRegistration: boolean("requires_registration").default(true).notNull(),
+  coverImage: text("cover_image"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  isPremiumOnly: boolean("is_premium_only").default(true).notNull(),
+});
+
+// Premium Features: Event Attendees
+export const specialEventAttendees = pgTable("special_event_attendees", {
+  eventId: integer("event_id").notNull().references(() => specialEvents.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  status: text("status").notNull().default("registered"), // registered, attended, cancelled
+  registeredAt: timestamp("registered_at").defaultNow().notNull(),
+  notes: text("notes"),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.eventId, t.userId] })
+}));
+
+// Premium Features: Team Building Activities
+export const teamBuildingActivities = pgTable("team_building_activities", {
+  id: serial("id").primaryKey(),
+  teamId: integer("team_id").notNull().references(() => teams.id),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  activityType: text("activity_type").notNull(), // lunch_rotation, restaurant_crawl, cooking_competition, etc.
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date"),
+  recurrence: text("recurrence"), // once, daily, weekly, monthly
+  createdBy: integer("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  status: text("status").notNull().default("active"), // active, completed, cancelled
+  settings: json("settings").default({}), // activity specific settings
+});
+
+// Premium Features: Travel Mode
+export const travelProfiles = pgTable("travel_profiles", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id).unique(),
+  isEnabled: boolean("is_enabled").default(false).notNull(),
+  travelPreferences: json("travel_preferences").default({
+    meetLocals: true,
+    findFellowTravelers: true,
+    exploreCuisines: true,
+  }),
+  upcomingTrips: json("upcoming_trips").$type<{
+    destination: string,
+    arrivalDate: string,
+    departureDate: string,
+    notes: string
+  }[]>().default([]),
+  preferredMeetingTimes: json("preferred_meeting_times").$type<string[]>().default([]),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+});
 
 // User Availability Status (enhanced with corporate fields)
 export const userAvailabilities = pgTable("user_availabilities", {
@@ -454,6 +548,30 @@ export const corporateEventsRelations = relations(corporateEvents, ({ one, many 
 export const eventParticipantsRelations = relations(eventParticipants, ({ one }) => ({
   event: one(corporateEvents, { fields: [eventParticipants.eventId], references: [corporateEvents.id] }),
   user: one(users, { relationName: "eventParticipant", fields: [eventParticipants.userId], references: [users.id] }),
+}));
+
+// Premium features relations
+export const privateDiningRoomsRelations = relations(privateDiningRooms, ({ one }) => ({
+  restaurant: one(restaurants, { fields: [privateDiningRooms.restaurantId], references: [restaurants.id] }),
+}));
+
+export const specialEventsRelations = relations(specialEvents, ({ one, many }) => ({
+  host: one(users, { fields: [specialEvents.hostId], references: [users.id] }),
+  attendees: many(specialEventAttendees),
+}));
+
+export const specialEventAttendeesRelations = relations(specialEventAttendees, ({ one }) => ({
+  event: one(specialEvents, { fields: [specialEventAttendees.eventId], references: [specialEvents.id] }),
+  user: one(users, { fields: [specialEventAttendees.userId], references: [users.id] }),
+}));
+
+export const teamBuildingActivitiesRelations = relations(teamBuildingActivities, ({ one }) => ({
+  team: one(teams, { fields: [teamBuildingActivities.teamId], references: [teams.id] }),
+  creator: one(users, { fields: [teamBuildingActivities.createdBy], references: [users.id] }),
+}));
+
+export const travelProfilesRelations = relations(travelProfiles, ({ one }) => ({
+  user: one(users, { fields: [travelProfiles.userId], references: [users.id] }),
 }));
 
 // Define Zod schemas for validation
