@@ -1893,30 +1893,62 @@ export class DatabaseStorage implements IStorage {
       );
   }
 
-  async getUpcomingMeals(userId: number): Promise<(Invitation & { restaurant: Restaurant, partner: User })[]> {
-    // Get all invitations for this user
-    const userInvitations = await this.getInvitationsForUser(userId);
-    
-    // For each invitation, get the restaurant and partner details
-    const result: (Invitation & { restaurant: Restaurant, partner: User })[] = [];
-    
-    for (const invitation of userInvitations) {
-      const restaurant = await this.getRestaurant(invitation.restaurantId);
-      
-      // Determine who is the partner (the other user)
-      const partnerId = invitation.senderId === userId ? invitation.receiverId : invitation.senderId;
-      const partner = await this.getUser(partnerId);
-      
-      if (restaurant && partner) {
-        result.push({
-          ...invitation,
-          restaurant,
-          partner
-        });
-      }
+  async getInvitationsForUser(userId: number): Promise<Invitation[]> {
+    try {
+      // Get accepted invitations for this user that are scheduled for today or in the future
+      return await db
+        .select()
+        .from(invitations)
+        .where(
+          and(
+            or(
+              eq(invitations.senderId, userId),
+              eq(invitations.receiverId, userId)
+            ),
+            eq(invitations.status, "accepted"),
+            gte(invitations.date, sql`CURRENT_DATE`)
+          )
+        )
+        .orderBy(asc(invitations.date));
+    } catch (error) {
+      console.error("Error in getInvitationsForUser:", error);
+      throw error;
     }
-    
-    return result;
+  }
+
+  async getUpcomingMeals(userId: number): Promise<(Invitation & { restaurant: Restaurant, partner: User })[]> {
+    try {
+      // Get all accepted invitations for this user that are scheduled for today or in the future
+      const userInvitations = await this.getInvitationsForUser(userId);
+      
+      // For each invitation, get the restaurant and partner details
+      const result: (Invitation & { restaurant: Restaurant, partner: User })[] = [];
+      
+      for (const invitation of userInvitations) {
+        // Get the restaurant details
+        const restaurant = await this.getRestaurant(invitation.restaurantId);
+        
+        // Determine who is the partner (the other user)
+        const partnerId = invitation.senderId === userId ? invitation.receiverId : invitation.senderId;
+        
+        // Get the partner details
+        const partner = await this.getUser(partnerId);
+        
+        if (restaurant && partner) {
+          // Add the restaurant and partner to the invitation
+          result.push({
+            ...invitation,
+            restaurant,
+            partner
+          });
+        }
+      }
+      
+      return result;
+    } catch (error) {
+      console.error("Error in getUpcomingMeals:", error);
+      throw new Error("Failed to fetch upcoming meals: " + (error as Error).message);
+    }
   }
 }
 

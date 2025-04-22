@@ -165,7 +165,11 @@ export default function UpcomingMeals() {
   const { data: apiUpcomingMeals = [], isLoading: isApiLoading } = useQuery<UpcomingMeal[]>({
     queryKey: ["/api/meals/upcoming"],
     queryFn: getQueryFn<UpcomingMeal[]>(),
-    enabled: !DEMO_MODE && !!user
+    enabled: !DEMO_MODE && !!user,
+    retry: 1,
+    onError: (error) => {
+      console.error("Error fetching upcoming meals:", error);
+    }
   });
   
   // Use mock data in demo mode, otherwise use data from API
