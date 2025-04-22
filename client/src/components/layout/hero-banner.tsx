@@ -5,8 +5,11 @@ import { Button } from "@/components/ui/button";
 // Import food imagery assets
 import foodImage1 from "@/assets/food-image1.png";
 import foodImage2 from "@/assets/food-image2.png";
-// In a real application we would have more images
-// These are placeholders for now
+import diningCouple1 from "@/assets/dining-couple1.png";
+import diningCouple2 from "@/assets/dining-couple2.png";
+import diningCouple3 from "@/assets/dining-couple3.png";
+import diningFriends1 from "@/assets/dining-friends1.png";
+import diningFriends2 from "@/assets/dining-friends2.png";
 
 interface HeroImage {
   url: string;
@@ -23,13 +26,41 @@ const heroImages: HeroImage[] = [
     subtitle: "Find your perfect dining companion and explore new flavors together"
   },
   {
+    url: diningCouple1,
+    alt: "Couple enjoying dinner together",
+    title: "Create Lasting Memories",
+    subtitle: "Share intimate dining experiences with compatible companions"
+  },
+  {
     url: foodImage2,
     alt: "Modern restaurant interior",
-    title: "Share Meaningful Conversations",
+    title: "Explore Fine Dining",
     subtitle: "Connect over amazing food in beautiful settings around the city"
   },
-  // In a real app, we would include 5-6 more images to achieve the 7-8 total requested
-  // For now we're using the two provided images as examples
+  {
+    url: diningCouple2,
+    alt: "Elegant couple dining with gourmet food",
+    title: "Elevate Your Dining Experience",
+    subtitle: "Meet people who share your appreciation for culinary excellence"
+  },
+  {
+    url: diningCouple3,
+    alt: "Couple sharing tapas and appetizers",
+    title: "Taste New Cuisines Together",
+    subtitle: "Expand your palate with like-minded food enthusiasts"
+  },
+  {
+    url: diningFriends1,
+    alt: "Two friends enjoying pizza",
+    title: "Connect With New Friends",
+    subtitle: "Turn solo meals into social adventures with interesting companions"
+  },
+  {
+    url: diningFriends2,
+    alt: "Group of friends enjoying wine and food",
+    title: "Join Social Dining Circles",
+    subtitle: "Build your network while enjoying delicious meals in great company"
+  }
 ];
 
 export default function HeroBanner() {
