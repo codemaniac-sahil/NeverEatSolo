@@ -11,6 +11,8 @@ import diningCouple3 from "@/assets/dining-couple3.png";
 import diningFriends1 from "@/assets/dining-friends1.png";
 import diningFriends2 from "@/assets/dining-friends2.png";
 import diningFriends3 from "@/assets/dining-friends3.png";
+import colleaguesDining1 from "@/assets/colleagues-dining1.png"; 
+import colleaguesDining2 from "@/assets/colleagues-dining2.png";
 
 interface HeroImage {
   url: string;
@@ -67,6 +69,18 @@ const heroImages: HeroImage[] = [
     alt: "Stylish friends enjoying drinks together",
     title: "Experience Vibrant Social Gatherings",
     subtitle: "Meet new people in sophisticated settings and create lasting connections"
+  },
+  {
+    url: colleaguesDining1,
+    alt: "Colleagues enjoying lunch in a restaurant",
+    title: "Strengthen Workplace Connections",
+    subtitle: "Build stronger team relationships by connecting over lunch with colleagues"
+  },
+  {
+    url: colleaguesDining2,
+    alt: "Professional team sharing drinks and appetizers",
+    title: "Elevate Your Professional Network",
+    subtitle: "Turn ordinary work meals into meaningful connections that enhance collaboration"
   }
 ];
 

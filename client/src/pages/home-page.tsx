@@ -99,7 +99,13 @@ export default function HomePage() {
             
             <p className="text-lg md:text-xl font-light text-zinc-400 mb-8 max-w-lg">
               Connect with like-minded food enthusiasts for memorable dining experiences
-              at any type of restaurant, from casual cafés to local favorites.
+              at any type of restaurant, from casual cafés to local favorites. Strengthen workplace 
+              relationships by sharing meals with colleagues.
+            </p>
+            
+            <p className="text-zinc-300 font-medium mb-4 max-w-lg border-l-2 border-primary pl-4 italic">
+              Food and drink bring people together. Turn lunch breaks and after-work gatherings into 
+              meaningful connections that enhance collaboration and build lasting professional relationships.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 mt-8">
