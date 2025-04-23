@@ -13,6 +13,8 @@ import diningFriends2 from "@/assets/dining-friends2.png";
 import diningFriends3 from "@/assets/dining-friends3.png";
 import colleaguesDining1 from "@/assets/colleagues-dining1.png"; 
 import colleaguesDining2 from "@/assets/colleagues-dining2.png";
+import businessLunch from "@/assets/business-lunch.png";
+import teamBonding from "@/assets/team-bonding.png";
 
 interface HeroImage {
   url: string;
@@ -43,7 +45,7 @@ const heroImages: HeroImage[] = [
   {
     url: diningCouple2,
     alt: "Elegant couple dining with gourmet food",
-    title: "Elevate Your Dining Experience",
+    title: "Enhance Your Dining Experience",
     subtitle: "Meet people who share your appreciation for culinary excellence"
   },
   {
@@ -79,8 +81,20 @@ const heroImages: HeroImage[] = [
   {
     url: colleaguesDining2,
     alt: "Professional team sharing drinks and appetizers",
-    title: "Elevate Your Professional Network",
+    title: "Grow Your Professional Network",
     subtitle: "Turn ordinary work meals into meaningful connections that enhance collaboration"
+  },
+  {
+    url: businessLunch,
+    alt: "Business team having a productive lunch meeting",
+    title: "Forge Strategic Partnerships",
+    subtitle: "Use shared meals to build trust and develop stronger business relationships"
+  },
+  {
+    url: teamBonding,
+    alt: "Team members bonding over food and drinks",
+    title: "Boost Team Morale and Creativity",
+    subtitle: "Sharing meals breaks down silos and sparks innovation across departments"
   }
 ];
 
