@@ -99,14 +99,6 @@ export default function SiteHeader() {
           Availability
         </div>
       </Link>
-      
-      <Link href="/receipts">
-        <div className={`text-sm uppercase tracking-wider font-light hover:text-primary transition-colors px-4 py-2 border-b-2 ${
-          location === "/receipts" ? "border-primary text-primary" : "border-transparent text-zinc-400"
-        }`}>
-          Receipts
-        </div>
-      </Link>
     </>
   );
 

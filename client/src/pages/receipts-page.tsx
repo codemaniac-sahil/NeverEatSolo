@@ -2,13 +2,41 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { getQueryFn } from "@/lib/queryClient";
+import { useLocation } from "wouter";
 import { ReceiptCapture } from "@/components/receipts/receipt-capture";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Receipt, Calendar, DollarSign, Tag, Share2, Plus, FolderOpen } from "lucide-react";
+import { 
+  Receipt, 
+  Calendar, 
+  DollarSign, 
+  Tag, 
+  Share2, 
+  Plus, 
+  FolderOpen, 
+  ChevronLeft, 
+  Mail, 
+  FileText, 
+  Download,
+  User
+} from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface ReceiptData {
   id: number;
@@ -39,6 +67,7 @@ export default function ReceiptsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [showAddReceipt, setShowAddReceipt] = useState(false);
+  const [, setLocation] = useLocation();
   
   const {
     data: receipts = [],
@@ -72,6 +101,10 @@ export default function ReceiptsPage() {
     });
   };
   
+  const handleGoBack = () => {
+    setLocation('/');
+  };
+  
   if (!user) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -87,7 +120,17 @@ export default function ReceiptsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Receipts</h1>
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={handleGoBack}
+            className="h-8 w-8"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <h1 className="text-3xl font-bold">Receipts</h1>
+        </div>
         {!showAddReceipt && (
           <Button onClick={handleAddNewReceiptClick}>
             <Plus className="mr-2 h-4 w-4" />
@@ -190,6 +233,33 @@ interface ReceiptCardProps {
 }
 
 function ReceiptCard({ receipt, isShared = false }: ReceiptCardProps) {
+  const { toast } = useToast();
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  
+  const handleShareEmail = () => {
+    toast({
+      title: "Email Sharing",
+      description: "Receipt has been sent via email.",
+    });
+    setShowShareDialog(false);
+  };
+  
+  const handleShareWithFriend = () => {
+    toast({
+      title: "Shared with Friend",
+      description: "This feature will allow you to select friends to share the receipt with.",
+    });
+    setShowShareDialog(false);
+  };
+  
+  const handleExportPDF = () => {
+    toast({
+      title: "PDF Export",
+      description: "Receipt has been exported as PDF.",
+    });
+    setShowShareDialog(false);
+  };
+  
   return (
     <Card className="overflow-hidden">
       <div className="relative h-48 bg-muted">
@@ -233,6 +303,50 @@ function ReceiptCard({ receipt, isShared = false }: ReceiptCardProps) {
             <DollarSign className="h-4 w-4 mr-1" />
             {receipt.amount} {receipt.currency}
           </div>
+          
+          {!isShared && (
+            <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="ml-2 h-8 w-8">
+                  <Share2 className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Share Receipt</DialogTitle>
+                  <DialogDescription>
+                    Share this receipt with a friend or export as PDF
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <Button 
+                    variant="outline" 
+                    className="flex items-center justify-start"
+                    onClick={handleShareWithFriend}
+                  >
+                    <User className="mr-2 h-4 w-4" />
+                    Share with friends
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex items-center justify-start"
+                    onClick={handleShareEmail}
+                  >
+                    <Mail className="mr-2 h-4 w-4" />
+                    Send via email
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex items-center justify-start"
+                    onClick={handleExportPDF}
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    Export as PDF
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
         
         {receipt.tags && receipt.tags.length > 0 && (
@@ -252,10 +366,30 @@ function ReceiptCard({ receipt, isShared = false }: ReceiptCardProps) {
         )}
       </CardContent>
       
-      <CardFooter>
-        <Button variant="outline" className="w-full" size="sm">
+      <CardFooter className="flex gap-2">
+        <Button 
+          variant="outline" 
+          className="flex-1" 
+          size="sm"
+        >
           View Details
         </Button>
+        
+        {!isShared && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="h-8 w-8">
+                <Download className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleExportPDF}>
+                <FileText className="mr-2 h-4 w-4" />
+                Export as PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </CardFooter>
     </Card>
   );
