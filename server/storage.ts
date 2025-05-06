@@ -23,7 +23,8 @@ import {
   specialEvents, type SpecialEvent, type InsertSpecialEvent,
   specialEventAttendees, type SpecialEventAttendee, type InsertSpecialEventAttendee,
   teamBuildingActivities, type TeamBuildingActivity, type InsertTeamBuildingActivity,
-  travelProfiles, type TravelProfile, type InsertTravelProfile
+  travelProfiles, type TravelProfile, type InsertTravelProfile,
+  receipts, type Receipt, type InsertReceipt
 } from "@shared/schema";
 import session from "express-session";
 import connectPg from "connect-pg-simple";

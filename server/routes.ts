@@ -18,6 +18,7 @@ import {
   insertRestaurantRecommendationSchema,
   insertNotificationSchema,
   insertUserSettingsSchema,
+  insertReceiptSchema,
   // Corporate schemas
   insertOrganizationSchema,
   insertTeamSchema,
