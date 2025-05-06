@@ -1822,6 +1822,153 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch nearby travelers" });
     }
   });
+  
+  // Receipt routes
+  app.get("/api/receipts", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    try {
+      const receipts = await storage.getUserReceipts(req.user.id);
+      res.json(receipts);
+    } catch (error) {
+      console.error("Error fetching user receipts:", error);
+      res.status(500).json({ message: "Error fetching receipts" });
+    }
+  });
+  
+  app.get("/api/receipts/shared", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    try {
+      const sharedReceipts = await storage.getSharedReceipts(req.user.id);
+      res.json(sharedReceipts);
+    } catch (error) {
+      console.error("Error fetching shared receipts:", error);
+      res.status(500).json({ message: "Error fetching shared receipts" });
+    }
+  });
+  
+  app.get("/api/receipts/:id", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    const receiptId = parseInt(req.params.id);
+    if (isNaN(receiptId)) {
+      return res.status(400).json({ message: "Invalid receipt ID" });
+    }
+    
+    try {
+      const receipt = await storage.getReceipt(receiptId);
+      
+      if (!receipt) {
+        return res.status(404).json({ message: "Receipt not found" });
+      }
+      
+      // Check if user is authorized to view this receipt
+      if (receipt.userId !== req.user.id && 
+         (!receipt.sharedWithUserIds || !receipt.sharedWithUserIds.includes(req.user.id))) {
+        return res.status(403).json({ message: "Not authorized to view this receipt" });
+      }
+      
+      res.json(receipt);
+    } catch (error) {
+      console.error("Error fetching receipt:", error);
+      res.status(500).json({ message: "Error fetching receipt" });
+    }
+  });
+  
+  app.post("/api/receipts", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    try {
+      // Validate the request body
+      const validatedData = insertReceiptSchema.parse({
+        ...req.body,
+        userId: req.user.id,
+      });
+      
+      const receipt = await storage.createReceipt(validatedData);
+      res.status(201).json(receipt);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      console.error("Error creating receipt:", error);
+      res.status(500).json({ message: "Error creating receipt" });
+    }
+  });
+  
+  app.put("/api/receipts/:id", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    const receiptId = parseInt(req.params.id);
+    if (isNaN(receiptId)) {
+      return res.status(400).json({ message: "Invalid receipt ID" });
+    }
+    
+    try {
+      const receipt = await storage.getReceipt(receiptId);
+      
+      if (!receipt) {
+        return res.status(404).json({ message: "Receipt not found" });
+      }
+      
+      // Only the owner can update the receipt
+      if (receipt.userId !== req.user.id) {
+        return res.status(403).json({ message: "Not authorized to update this receipt" });
+      }
+      
+      const updatedReceipt = await storage.updateReceipt(receiptId, req.body);
+      res.json(updatedReceipt);
+    } catch (error) {
+      console.error("Error updating receipt:", error);
+      res.status(500).json({ message: "Error updating receipt" });
+    }
+  });
+  
+  app.delete("/api/receipts/:id", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    const receiptId = parseInt(req.params.id);
+    if (isNaN(receiptId)) {
+      return res.status(400).json({ message: "Invalid receipt ID" });
+    }
+    
+    try {
+      const receipt = await storage.getReceipt(receiptId);
+      
+      if (!receipt) {
+        return res.status(404).json({ message: "Receipt not found" });
+      }
+      
+      // Only the owner can delete the receipt
+      if (receipt.userId !== req.user.id) {
+        return res.status(403).json({ message: "Not authorized to delete this receipt" });
+      }
+      
+      const success = await storage.deleteReceipt(receiptId);
+      if (success) {
+        res.status(204).end();
+      } else {
+        res.status(500).json({ message: "Failed to delete receipt" });
+      }
+    } catch (error) {
+      console.error("Error deleting receipt:", error);
+      res.status(500).json({ message: "Error deleting receipt" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
