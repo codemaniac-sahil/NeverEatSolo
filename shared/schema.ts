@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, json, primaryKey } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, json, primaryKey, numeric } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -323,6 +323,34 @@ export const teamBuildingActivities = pgTable("team_building_activities", {
   settings: json("settings").default({}), // activity specific settings
 });
 
+// Receipt Storage model - for uploading receipts from meals
+export const receipts = pgTable("receipts", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  invitationId: integer("invitation_id").references(() => invitations.id),
+  restaurantId: integer("restaurant_id").references(() => restaurants.id),
+  imageUrl: text("image_url").notNull(),
+  thumbnailUrl: text("thumbnail_url"),
+  totalAmount: numeric("total_amount"),
+  currency: text("currency").default("USD"),
+  date: timestamp("date").defaultNow().notNull(),
+  description: text("description"),
+  category: text("category").default("meal"), // meal, drinks, transportation, etc.
+  tags: json("tags").$type<string[]>().default([]),
+  isExpensed: boolean("is_expense").default(false),
+  isShared: boolean("is_shared").default(false),
+  sharedWithUserIds: json("shared_with_user_ids").$type<number[]>().default([]),
+  splitDetails: json("split_details").$type<{
+    userId: number,
+    amount: number,
+    isPaid: boolean,
+    paymentMethod?: string,
+    paymentDate?: string
+  }[]>().default([]),
+  ocrText: text("ocr_text"), // Text extracted from receipt via OCR
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Premium Features: Travel Mode
 export const travelProfiles = pgTable("travel_profiles", {
   id: serial("id").primaryKey(),
@@ -450,6 +478,7 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   specialEventAttendances: many(specialEventAttendees),
   createdTeamBuildingActivities: many(teamBuildingActivities),
   travelProfile: one(travelProfiles),
+  receipts: many(receipts),
 }));
 
 export const restaurantsRelations = relations(restaurants, ({ many }) => ({
@@ -457,6 +486,7 @@ export const restaurantsRelations = relations(restaurants, ({ many }) => ({
   savedBy: many(savedRestaurants),
   recommendations: many(restaurantRecommendations),
   privateDiningRooms: many(privateDiningRooms), // Premium feature
+  receipts: many(receipts),
 }));
 
 export const savedRestaurantsRelations = relations(savedRestaurants, ({ one }) => ({
