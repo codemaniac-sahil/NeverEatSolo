@@ -218,6 +218,16 @@ export interface IStorage {
   updateTravelProfile(userId: number, data: Partial<TravelProfile>): Promise<TravelProfile | undefined>;
   deleteTravelProfile(userId: number): Promise<boolean>;
   getUsersInTravelMode(lat: string, lng: string, radius: number): Promise<(TravelProfile & { user: User })[]>;
+  
+  // Receipt operations
+  getReceipt(id: number): Promise<Receipt | undefined>;
+  getUserReceipts(userId: number): Promise<Receipt[]>;
+  getReceiptsForInvitation(invitationId: number): Promise<Receipt[]>;
+  getReceiptsForRestaurant(restaurantId: number): Promise<Receipt[]>;
+  createReceipt(receipt: InsertReceipt): Promise<Receipt>;
+  updateReceipt(id: number, data: Partial<Receipt>): Promise<Receipt | undefined>;
+  deleteReceipt(id: number): Promise<boolean>;
+  getSharedReceipts(userId: number): Promise<Receipt[]>;
 
   // Session store
   sessionStore: session.Store;
@@ -779,6 +789,85 @@ export class DatabaseStorage implements IStorage {
     });
     
     return filteredResults;
+  }
+
+  // Receipt methods
+  async getReceipt(id: number): Promise<Receipt | undefined> {
+    const [receipt] = await db
+      .select()
+      .from(receipts)
+      .where(eq(receipts.id, id));
+    
+    return receipt;
+  }
+
+  async getUserReceipts(userId: number): Promise<Receipt[]> {
+    return db
+      .select()
+      .from(receipts)
+      .where(eq(receipts.userId, userId))
+      .orderBy(desc(receipts.date));
+  }
+
+  async getReceiptsForInvitation(invitationId: number): Promise<Receipt[]> {
+    return db
+      .select()
+      .from(receipts)
+      .where(eq(receipts.invitationId, invitationId))
+      .orderBy(desc(receipts.date));
+  }
+
+  async getReceiptsForRestaurant(restaurantId: number): Promise<Receipt[]> {
+    return db
+      .select()
+      .from(receipts)
+      .where(eq(receipts.restaurantId, restaurantId))
+      .orderBy(desc(receipts.date));
+  }
+
+  async createReceipt(data: InsertReceipt): Promise<Receipt> {
+    const [receipt] = await db
+      .insert(receipts)
+      .values(data)
+      .returning();
+    
+    return receipt;
+  }
+
+  async updateReceipt(id: number, data: Partial<Receipt>): Promise<Receipt | undefined> {
+    const [updatedReceipt] = await db
+      .update(receipts)
+      .set(data)
+      .where(eq(receipts.id, id))
+      .returning();
+    
+    return updatedReceipt;
+  }
+
+  async deleteReceipt(id: number): Promise<boolean> {
+    const result = await db
+      .delete(receipts)
+      .where(eq(receipts.id, id));
+    
+    return result.rowCount > 0;
+  }
+
+  async getSharedReceipts(userId: number): Promise<Receipt[]> {
+    // This is a simplified version that finds receipts where the user ID is in the sharedWithUserIds array
+    // In PostgreSQL, you would use a more efficient query with JSON operators
+    const allReceipts = await db
+      .select()
+      .from(receipts)
+      .where(eq(receipts.isShared, true));
+    
+    // Filter results to find receipts shared with the specified user
+    const sharedReceipts = allReceipts.filter(receipt => 
+      receipt.sharedWithUserIds && 
+      Array.isArray(receipt.sharedWithUserIds) && 
+      receipt.sharedWithUserIds.includes(userId)
+    );
+    
+    return sharedReceipts;
   }
   
   // Messaging methods

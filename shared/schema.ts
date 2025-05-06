@@ -494,10 +494,11 @@ export const savedRestaurantsRelations = relations(savedRestaurants, ({ one }) =
   restaurant: one(restaurants, { fields: [savedRestaurants.restaurantId], references: [restaurants.id] }),
 }));
 
-export const invitationsRelations = relations(invitations, ({ one }) => ({
+export const invitationsRelations = relations(invitations, ({ one, many }) => ({
   sender: one(users, { relationName: "sentInvitations", fields: [invitations.senderId], references: [users.id] }),
   receiver: one(users, { relationName: "receivedInvitations", fields: [invitations.receiverId], references: [users.id] }),
   restaurant: one(restaurants, { fields: [invitations.restaurantId], references: [restaurants.id] }),
+  receipts: many(receipts),
 }));
 
 export const messagesRelations = relations(messages, ({ one }) => ({
@@ -608,6 +609,12 @@ export const specialEventAttendeesRelations = relations(specialEventAttendees, (
 export const teamBuildingActivitiesRelations = relations(teamBuildingActivities, ({ one }) => ({
   team: one(teams, { fields: [teamBuildingActivities.teamId], references: [teams.id] }),
   creator: one(users, { fields: [teamBuildingActivities.createdBy], references: [users.id] }),
+}));
+
+export const receiptsRelations = relations(receipts, ({ one }) => ({
+  user: one(users, { fields: [receipts.userId], references: [users.id] }),
+  invitation: one(invitations, { fields: [receipts.invitationId], references: [invitations.id] }),
+  restaurant: one(restaurants, { fields: [receipts.restaurantId], references: [restaurants.id] }),
 }));
 
 export const travelProfilesRelations = relations(travelProfiles, ({ one }) => ({
@@ -819,6 +826,21 @@ export const insertTeamBuildingActivitySchema = createInsertSchema(teamBuildingA
   createdAt: true,
 });
 
+export const insertReceiptSchema = createInsertSchema(receipts, {
+  tags: z.array(z.string()).optional(),
+  sharedWithUserIds: z.array(z.number()).optional(),
+  splitDetails: z.array(z.object({
+    userId: z.number(),
+    amount: z.number(),
+    isPaid: z.boolean().optional(),
+    paymentMethod: z.string().optional(),
+    paymentDate: z.string().optional(),
+  })).optional(),
+}).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertTravelProfileSchema = createInsertSchema(travelProfiles, {
   travelPreferences: z.object({
     meetLocals: z.boolean().optional(),
@@ -850,6 +872,9 @@ export type InsertSpecialEventAttendee = z.infer<typeof insertSpecialEventAttend
 
 export type TeamBuildingActivity = typeof teamBuildingActivities.$inferSelect;
 export type InsertTeamBuildingActivity = z.infer<typeof insertTeamBuildingActivitySchema>;
+
+export type Receipt = typeof receipts.$inferSelect;
+export type InsertReceipt = z.infer<typeof insertReceiptSchema>;
 
 export type TravelProfile = typeof travelProfiles.$inferSelect;
 export type InsertTravelProfile = z.infer<typeof insertTravelProfileSchema>;
