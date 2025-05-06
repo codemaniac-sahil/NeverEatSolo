@@ -8,7 +8,8 @@ import {
   LogOut,
   Settings,
   Menu,
-  Bell
+  Bell,
+  Receipt
 } from "lucide-react";
 import { NotificationList } from "@/components/notifications/notification-list";
 import { Button } from "@/components/ui/button";
@@ -98,6 +99,14 @@ export default function SiteHeader() {
           Availability
         </div>
       </Link>
+      
+      <Link href="/receipts">
+        <div className={`text-sm uppercase tracking-wider font-light hover:text-primary transition-colors px-4 py-2 border-b-2 ${
+          location === "/receipts" ? "border-primary text-primary" : "border-transparent text-zinc-400"
+        }`}>
+          Receipts
+        </div>
+      </Link>
     </>
   );
 
@@ -150,6 +159,15 @@ export default function SiteHeader() {
                     <DropdownMenuItem className="hover:bg-zinc-800 cursor-pointer">
                       <Settings className="mr-2 h-4 w-4 text-zinc-400" />
                       <span>Settings</span>
+                    </DropdownMenuItem>
+                  </div>
+                </Link>
+                
+                <Link href="/receipts">
+                  <div className="w-full">
+                    <DropdownMenuItem className="hover:bg-zinc-800 cursor-pointer">
+                      <Receipt className="mr-2 h-4 w-4 text-zinc-400" />
+                      <span>Receipts</span>
                     </DropdownMenuItem>
                   </div>
                 </Link>
