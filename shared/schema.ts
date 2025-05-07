@@ -68,6 +68,8 @@ export const users = pgTable("users", {
   dietaryRestrictions: json("dietary_restrictions").$type<string[]>().default([]),
   cuisinePreferences: json("cuisine_preferences").$type<string[]>().default([]),
   diningStyles: json("dining_styles").$type<string[]>().default([]),
+  dietary: text("dietary"), // none, vegetarian, vegan, halal, kosher, gluten_free
+  typicalLunch: text("typical_lunch"), // Preferred lunch time (e.g., "12:00")
   locationLat: numeric("location_lat", { precision: 9, scale: 6 }),
   locationLng: numeric("location_lng", { precision: 9, scale: 6 }),
   locationContext: text("location_context").default("local"), // local, tourist, visiting, networking, other

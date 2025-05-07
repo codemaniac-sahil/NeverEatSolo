@@ -1,0 +1,151 @@
+// src/pages/RegisterPage.tsx
+// Registration page for Never Eat Alone
+// Uses React Hook Form + Zod for validation and the shadcn/ui component library
+// Assumes a helper api.ts that wraps fetch/axios with auth cookies
+
+import React from "react";
+import { useNavigate } from "wouter";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectItem } from "@/components/ui/select";
+import { Spinner } from "@/components/ui/spinner";
+import { api } from "@/lib/api";
+
+// ------------------------------
+// Validation schema
+// ------------------------------
+const schema = z
+  .object({
+    firstName: z.string().min(1, "First name is required"),
+    lastName: z.string().min(1, "Last name is required"),
+    email: z.string().email("Must be a valid e‑mail"),
+    password: z.string().min(8, "Minimum 8 characters"),
+    confirm: z.string(),
+    dietary: z
+      .enum(["none", "vegetarian", "vegan", "halal", "kosher", "gluten_free"]).optional(),
+    typicalLunch: z
+      .enum(["11:30", "12:00", "12:30", "13:00", "13:30", "14:00"]).optional(),
+  })
+  .refine((d) => d.password === d.confirm, {
+    message: "Passwords do not match",
+    path: ["confirm"],
+  });
+
+export type RegisterFormValues = z.infer<typeof schema>;
+
+export default function RegisterPage() {
+  const navigate = useNavigate();
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterFormValues>({
+    resolver: zodResolver(schema),
+  });
+
+  const onSubmit = async (data: RegisterFormValues) => {
+    try {
+      await api.post("/auth/register", data);
+      navigate("/dashboard");
+    } catch (error: any) {
+      const message = error?.response?.data?.message ?? "Registration failed";
+      alert(message);
+    }
+  };
+
+  return (
+    <div className="mx-auto max-w-md p-6">
+      <h1 className="mb-6 text-3xl font-bold">Create your account</h1>
+
+      <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+        <Input
+          label="First name"
+          placeholder="Ada"
+          {...register("firstName")}
+          error={errors.firstName?.message}
+        />
+        <Input
+          label="Last name"
+          placeholder="Lovelace"
+          {...register("lastName")}
+          error={errors.lastName?.message}
+        />
+        <Input
+          type="email"
+          label="Email"
+          placeholder="ada@example.com"
+          {...register("email")}
+          error={errors.email?.message}
+        />
+        <Input
+          type="password"
+          label="Password"
+          placeholder="••••••••"
+          {...register("password")}
+          error={errors.password?.message}
+        />
+        <Input
+          type="password"
+          label="Confirm password"
+          placeholder="••••••••"
+          {...register("confirm")}
+          error={errors.confirm?.message}
+        />
+
+        <Select label="Dietary preference" {...register("dietary") as any}>
+          <SelectItem value="none">No preference</SelectItem>
+          <SelectItem value="vegetarian">Vegetarian</SelectItem>
+          <SelectItem value="vegan">Vegan</SelectItem>
+          <SelectItem value="halal">Halal</SelectItem>
+          <SelectItem value="kosher">Kosher</SelectItem>
+          <SelectItem value="gluten_free">Gluten‑free</SelectItem>
+        </Select>
+
+        <Select label="Typical lunch time" {...register("typicalLunch") as any}>
+          <SelectItem value="11:30">11:30</SelectItem>
+          <SelectItem value="12:00">12:00</SelectItem>
+          <SelectItem value="12:30">12:30</SelectItem>
+          <SelectItem value="13:00">13:00</SelectItem>
+          <SelectItem value="13:30">13:30</SelectItem>
+          <SelectItem value="14:00">14:00</SelectItem>
+        </Select>
+
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? <Spinner /> : "Register"}
+        </Button>
+      </form>
+
+      <p className="mt-4 text-center text-sm">
+        Already have an account? <a href="/login" className="font-medium underline hover:text-blue-600">Log&nbsp;in</a>
+      </p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Back‑end changes (Node/Express) – quick reference (not compiled in React):
+// ---------------------------------------------------------------------------
+// authRoutes.ts
+// router.post("/register", async (req, res, next) => {
+//   const schema = z.object({
+//     firstName: z.string().min(1),
+//     lastName: z.string().min(1),
+//     email: z.string().email(),
+//     password: z.string().min(8),
+//     dietary: z.string().optional(),
+//     typicalLunch: z.string().optional(),
+//   });
+//   const result = schema.safeParse(req.body);
+//   if (!result.success) {
+//     return res.status(400).json({ message: "Invalid input" });
+//   }
+//   const { password, ...rest } = result.data;
+//   const hashed = await hashPassword(password); // scrypt / bcrypt helper
+//   const user = await db.user.create({ data: { ...rest, password: hashed } });
+//   req.session.userId = user.id;
+//   res.json({ id: user.id });
+// });

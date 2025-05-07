@@ -306,6 +306,13 @@ export default function AuthPage() {
                   >
                     Sign up
                   </button>
+                  {" or "}
+                  <a 
+                    href="/register" 
+                    className="font-medium text-primary hover:underline"
+                  >
+                    Register with extended form
+                  </a>
                 </p>
               </div>
             </TabsContent>

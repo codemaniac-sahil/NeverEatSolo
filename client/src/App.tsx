@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import HomePage from "@/pages/home-page";
 import AuthPage from "@/pages/auth-page";
+import RegisterPage from "@/pages/register-page";
 import ProfilePage from "@/pages/profile-page";
 import OnboardingPage from "@/pages/onboarding-page";
 import MessagingPage from "@/pages/messaging-page";
@@ -42,6 +43,7 @@ function Router() {
       <ProtectedRoute path="/corporate-events" component={CorporateEventsPage} />
       <ProtectedRoute path="/receipts" component={ReceiptsPage} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/register" component={RegisterPage} />
       <Route component={NotFound} />
     </Switch>
   );
