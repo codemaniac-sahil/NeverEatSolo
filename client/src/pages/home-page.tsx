@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
+import { getQueryFn } from "@/lib/queryClient";
 import SiteHeader from "@/components/layout/site-header";
 import MobileNav from "@/components/layout/mobile-nav";
 import HeroBanner from "@/components/layout/hero-banner";
@@ -58,6 +59,7 @@ export default function HomePage() {
   // Fetch upcoming meals
   const { data: upcomingMeals = [] } = useQuery({
     queryKey: ["/api/meals/upcoming"],
+    queryFn: getQueryFn(),
     enabled: !!user
   });
 
