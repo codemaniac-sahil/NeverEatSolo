@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
@@ -35,6 +35,109 @@ import {
   insertTravelProfileSchema
 } from "@shared/schema";
 import { nanoid } from "nanoid";
+
+/**
+ * Helper function to verify resource ownership
+ * @param user The authenticated user
+ * @param resourceType The type of resource being accessed (e.g., 'receipt', 'invitation')
+ * @param resourceId The ID of the resource being accessed
+ * @returns A Promise that resolves to a boolean indicating if the user can access the resource
+ */
+async function canAccess(req: Request, resourceType: string, resourceId: number): Promise<boolean> {
+  if (!req.isAuthenticated() || !req.user) {
+    return false;
+  }
+
+  const userId = req.user.id;
+  
+  try {
+    switch(resourceType) {
+      case 'receipt': {
+        const receipt = await storage.getReceipt(resourceId);
+        if (!receipt) return false;
+        return receipt.userId === userId || 
+               (Array.isArray(receipt.sharedWithUserIds) && receipt.sharedWithUserIds.includes(userId));
+      }
+      
+      case 'invitation': {
+        const invitation = await storage.getInvitation(resourceId);
+        if (!invitation) return false;
+        return invitation.senderId === userId || invitation.receiverId === userId;
+      }
+      
+      case 'saved-restaurant': {
+        const savedRestaurant = await storage.getSavedRestaurant(resourceId);
+        if (!savedRestaurant) return false;
+        return savedRestaurant.userId === userId;
+      }
+      
+      case 'friend': {
+        const friendship = await storage.getFriend(resourceId);
+        if (!friendship) return false;
+        return friendship.userId === userId || friendship.friendId === userId;
+      }
+      
+      case 'notification': {
+        const notification = await storage.getNotification(resourceId);
+        if (!notification) return false;
+        return notification.userId === userId;
+      }
+      
+      case 'dining-circle': {
+        const circle = await storage.getDiningCircle(resourceId);
+        if (!circle) return false;
+        
+        // If the circle is public, anyone can access it
+        if (!circle.isPrivate) return true;
+        
+        // If private, check if user is a member
+        const members = await storage.getDiningCircleMembers(resourceId);
+        return members.some(member => member.user.id === userId);
+      }
+      
+      case 'team': {
+        const team = await storage.getTeam(resourceId);
+        if (!team) return false;
+        
+        // Check if user is a member of this team
+        const members = await storage.getTeamMembers(resourceId);
+        return members.some(member => member.userId === userId);
+      }
+      
+      case 'organization': {
+        const organization = await storage.getOrganization(resourceId);
+        if (!organization) return false;
+        
+        // Check if user belongs to this organization
+        return req.user.organizationId === organization.id;
+      }
+
+      case 'user-availability': {
+        const availability = await storage.getUserAvailability(resourceId);
+        if (!availability) return false;
+        return availability.userId === userId;
+      }
+      
+      case 'special-event': {
+        const event = await storage.getSpecialEvent(resourceId);
+        if (!event) return false;
+        
+        // Check if user is the organizer or an attendee
+        if (event.userId === userId) return true;  // Using userId as the organizer
+        
+        const attendees = await storage.getSpecialEventAttendees(resourceId);
+        return attendees.some(attendee => attendee.userId === userId);
+      }
+      
+      default:
+        console.warn(`No ownership check implemented for resource type: ${resourceType}`);
+        return false;
+    }
+  } catch (error) {
+    console.error(`Error checking resource access: ${error}`);
+    return false;
+  }
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up auth routes (/api/register, /api/login, /api/logout, /api/user)
@@ -1863,16 +1966,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
+      // Check if the user has access to this receipt
+      const hasAccess = await canAccess(req, 'receipt', receiptId);
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Not authorized to view this receipt" });
+      }
+      
       const receipt = await storage.getReceipt(receiptId);
       
       if (!receipt) {
         return res.status(404).json({ message: "Receipt not found" });
-      }
-      
-      // Check if user is authorized to view this receipt
-      if (receipt.userId !== req.user.id && 
-         (!receipt.sharedWithUserIds || !receipt.sharedWithUserIds.includes(req.user.id))) {
-        return res.status(403).json({ message: "Not authorized to view this receipt" });
       }
       
       res.json(receipt);
@@ -1917,15 +2021,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      const receipt = await storage.getReceipt(receiptId);
+      // Use the canAccess helper to check ownership
+      const hasAccess = await canAccess(req, 'receipt', receiptId);
       
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Not authorized to access this receipt" });
+      }
+      
+      // Get the receipt to ensure it exists
+      const receipt = await storage.getReceipt(receiptId);
       if (!receipt) {
         return res.status(404).json({ message: "Receipt not found" });
       }
       
-      // Only the owner can update the receipt
+      // Additional check to ensure only owners can update (not just viewers)
       if (receipt.userId !== req.user.id) {
-        return res.status(403).json({ message: "Not authorized to update this receipt" });
+        return res.status(403).json({ message: "Only the owner can update this receipt" });
       }
       
       const updatedReceipt = await storage.updateReceipt(receiptId, req.body);
@@ -1947,15 +2058,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      const receipt = await storage.getReceipt(receiptId);
+      // Use the canAccess helper to check if user owns the receipt
+      const canDelete = await canAccess(req, 'receipt', receiptId);
       
+      if (!canDelete) {
+        return res.status(403).json({ message: "Not authorized to delete this receipt" });
+      }
+      
+      // Check if the resource exists
+      const receipt = await storage.getReceipt(receiptId);
       if (!receipt) {
         return res.status(404).json({ message: "Receipt not found" });
       }
       
-      // Only the owner can delete the receipt
+      // Additional check to ensure only owners can delete
       if (receipt.userId !== req.user.id) {
-        return res.status(403).json({ message: "Not authorized to delete this receipt" });
+        return res.status(403).json({ message: "Only the owner can delete this receipt" });
       }
       
       const success = await storage.deleteReceipt(receiptId);
