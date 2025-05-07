@@ -68,8 +68,8 @@ export const users = pgTable("users", {
   dietaryRestrictions: json("dietary_restrictions").$type<string[]>().default([]),
   cuisinePreferences: json("cuisine_preferences").$type<string[]>().default([]),
   diningStyles: json("dining_styles").$type<string[]>().default([]),
-  locationLat: text("location_lat"),
-  locationLng: text("location_lng"),
+  locationLat: numeric("location_lat", { precision: 9, scale: 6 }),
+  locationLng: numeric("location_lng", { precision: 9, scale: 6 }),
   locationContext: text("location_context").default("local"), // local, tourist, visiting, networking, other
   locationContextNote: text("location_context_note"), // Additional notes about their location context
   lastActive: timestamp("last_active").defaultNow().notNull(),
@@ -98,8 +98,8 @@ export const restaurants = pgTable("restaurants", {
   cuisine: text("cuisine").notNull(),
   priceRange: text("price_range").notNull(),
   address: text("address").notNull(),
-  locationLat: text("location_lat").notNull(),
-  locationLng: text("location_lng").notNull(),
+  locationLat: numeric("location_lat", { precision: 9, scale: 6 }).notNull(),
+  locationLng: numeric("location_lng", { precision: 9, scale: 6 }).notNull(),
   rating: text("rating"),
   image: text("image"),
   activeUserCount: integer("active_user_count").default(0),
@@ -281,8 +281,8 @@ export const specialEvents = pgTable("special_events", {
   description: text("description").notNull(),
   locationName: text("location_name").notNull(),
   address: text("address").notNull(),
-  locationLat: text("location_lat"),
-  locationLng: text("location_lng"),
+  locationLat: numeric("location_lat", { precision: 9, scale: 6 }),
+  locationLng: numeric("location_lng", { precision: 9, scale: 6 }),
   startTime: timestamp("start_time").notNull(),
   endTime: timestamp("end_time").notNull(),
   maxAttendees: integer("max_attendees"),
@@ -381,8 +381,8 @@ export const userAvailabilities = pgTable("user_availabilities", {
   endTime: timestamp("end_time"),
   notes: text("notes"),
   visibility: text("visibility").notNull().default("public"), // public, friends, circles, private
-  locationLat: text("location_lat"),
-  locationLng: text("location_lng"),
+  locationLat: numeric("location_lat", { precision: 9, scale: 6 }),
+  locationLng: numeric("location_lng", { precision: 9, scale: 6 }),
   preferredRadius: integer("preferred_radius"), // in kilometers
   preferredCuisines: json("preferred_cuisines").$type<string[]>().default([]),
   createdAt: timestamp("created_at").defaultNow().notNull(),
