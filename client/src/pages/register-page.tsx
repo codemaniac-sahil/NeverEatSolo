@@ -1,17 +1,19 @@
-import React from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { FormInput } from "@/components/ui/form-input";
+import { Spinner } from "@/components/ui/spinner";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Form,
   FormControl,
   FormField,
   FormItem,
   FormLabel,
-  FormMessage
+  FormMessage 
 } from "@/components/ui/form";
 import {
   Select,
@@ -20,25 +22,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
 
 // Validation schema
 const schema = z
   .object({
     firstName: z.string().min(1, "First name is required"),
     lastName: z.string().min(1, "Last name is required"),
-    email: z.string().email("Must be a valid email"),
     username: z.string().min(3, "Username must be at least 3 characters"),
-    password: z.string().min(8, "Minimum 8 characters"),
+    email: z.string().email("Must be a valid email"),
+    password: z.string().min(8, "Password must be at least 8 characters"),
     confirm: z.string(),
     dietary: z
       .enum(["none", "vegetarian", "vegan", "halal", "kosher", "gluten_free"])
-      .default("none"),
+      .optional(),
     typicalLunch: z
       .enum(["11:30", "12:00", "12:30", "13:00", "13:30", "14:00"])
-      .default("12:00"),
+      .optional(),
   })
   .refine((data) => data.password === data.confirm, {
     message: "Passwords do not match",
@@ -48,7 +48,8 @@ const schema = z
 export type RegisterFormValues = z.infer<typeof schema>;
 
 export default function RegisterPage() {
-  const [, navigate] = useLocation();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
 
   const form = useForm<RegisterFormValues>({
@@ -56,8 +57,8 @@ export default function RegisterPage() {
     defaultValues: {
       firstName: "",
       lastName: "",
-      email: "",
       username: "",
+      email: "",
       password: "",
       confirm: "",
       dietary: "none",
@@ -66,14 +67,24 @@ export default function RegisterPage() {
   });
 
   const onSubmit = async (data: RegisterFormValues) => {
+    setIsSubmitting(true);
     try {
-      const response = await apiRequest("POST", "/api/register", data);
+      const response = await apiRequest("POST", "/api/register", {
+        username: data.username,
+        password: data.password,
+        email: data.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        dietary: data.dietary,
+        typicalLunch: data.typicalLunch
+      });
+
       if (response.ok) {
         toast({
-          title: "Registration successful",
-          description: "Welcome to Never Eat Solo!",
+          title: "Registration successful!",
+          description: "Welcome to Never Eat Alone!",
         });
-        navigate("/");
+        setLocation("/");
       } else {
         const errorData = await response.json();
         toast({
@@ -82,34 +93,82 @@ export default function RegisterPage() {
           variant: "destructive",
         });
       }
-    } catch (error: any) {
+    } catch (error) {
+      console.error("Registration error:", error);
       toast({
-        title: "Registration error",
-        description: error.message || "An unexpected error occurred",
+        title: "Registration failed",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-900 p-4">
-      <div className="w-full max-w-md p-8 space-y-8 bg-zinc-800 rounded-lg border border-zinc-700">
-        <div className="text-center">
-          <h1 className="text-3xl font-semibold text-primary">Create your account</h1>
-          <p className="mt-2 text-zinc-400">Join the Never Eat Solo community</p>
-        </div>
+    <div className="flex min-h-screen">
+      {/* Left side - Registration form */}
+      <div className="w-full md:w-1/2 p-8 flex items-center justify-center">
+        <div className="w-full max-w-md space-y-8">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold tracking-tight">Create your account</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Join our community and never eat alone again!
+            </p>
+          </div>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="firstName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>First name</FormLabel>
+                      <FormControl>
+                        <input
+                          placeholder="John"
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="lastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Last name</FormLabel>
+                      <FormControl>
+                        <input
+                          placeholder="Doe"
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
               <FormField
                 control={form.control}
-                name="firstName"
+                name="username"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>First name</FormLabel>
+                    <FormLabel>Username</FormLabel>
                     <FormControl>
-                      <Input placeholder="First name" {...field} />
+                      <input
+                        placeholder="johndoe"
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -118,89 +177,71 @@ export default function RegisterPage() {
 
               <FormField
                 control={form.control}
-                name="lastName"
+                name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Last name</FormLabel>
+                    <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="Last name" {...field} />
+                      <input
+                        type="email"
+                        placeholder="john.doe@example.com"
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </div>
 
-            <FormField
-              control={form.control}
-              name="username"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Username</FormLabel>
-                  <FormControl>
-                    <Input placeholder="username" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <input
+                        type="password"
+                        placeholder="••••••••"
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input type="email" placeholder="you@example.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="confirm"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirm password</FormLabel>
+                    <FormControl>
+                      <input
+                        type="password"
+                        placeholder="••••••••"
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="confirm"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Confirm password</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="dietary"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Dietary preference</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      defaultValue={field.value}
-                    >
+                    <Select value={field.value} onValueChange={field.onChange}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select preference" />
+                          <SelectValue placeholder="Select a dietary preference" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -223,13 +264,10 @@ export default function RegisterPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Typical lunch time</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      defaultValue={field.value}
-                    >
+                    <Select value={field.value} onValueChange={field.onChange}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select time" />
+                          <SelectValue placeholder="Select your usual lunch time" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -245,32 +283,51 @@ export default function RegisterPage() {
                   </FormItem>
                 )}
               />
-            </div>
 
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={form.formState.isSubmitting}
-            >
-              {form.formState.isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating account...
-                </>
-              ) : (
-                "Register"
-              )}
-            </Button>
-          </form>
-        </Form>
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? <Spinner className="mr-2" /> : null}
+                Create account
+              </Button>
 
-        <div className="mt-6 text-center text-sm">
-          <p className="text-zinc-400">
-            Already have an account?{" "}
-            <a href="/auth" className="text-primary hover:underline">
-              Log in
-            </a>
-          </p>
+              <p className="text-center text-sm text-muted-foreground">
+                Already have an account?{" "}
+                <a href="/auth" className="font-medium text-primary underline-offset-4 hover:underline">
+                  Sign in
+                </a>
+              </p>
+            </form>
+          </Form>
+        </div>
+      </div>
+
+      {/* Right side - Hero image and content */}
+      <div className="hidden md:block md:w-1/2 bg-muted">
+        <div className="h-full p-8 flex flex-col justify-center bg-gradient-to-br from-primary/10 to-primary/5">
+          <div className="max-w-md mx-auto space-y-6">
+            <h2 className="text-4xl font-bold">Never Eat Alone</h2>
+            <p className="text-xl">
+              Connect with like-minded professionals over lunch and expand your network
+              while enjoying great food.
+            </p>
+            <ul className="space-y-2">
+              <li className="flex items-center">
+                <span className="mr-2 text-primary">✓</span>
+                <span>Find dining partners with similar interests</span>
+              </li>
+              <li className="flex items-center">
+                <span className="mr-2 text-primary">✓</span>
+                <span>Discover new restaurants and cuisine</span>
+              </li>
+              <li className="flex items-center">
+                <span className="mr-2 text-primary">✓</span>
+                <span>Build meaningful connections</span>
+              </li>
+              <li className="flex items-center">
+                <span className="mr-2 text-primary">✓</span>
+                <span>Perfect for business travelers and locals</span>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
