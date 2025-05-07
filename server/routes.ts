@@ -642,21 +642,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
 
     try {
-      const { id } = req.params;
+      const savedRestaurantId = parseInt(req.params.id);
+      if (isNaN(savedRestaurantId)) {
+        return res.status(400).json({ message: "Invalid saved restaurant ID" });
+      }
       
-      // Get the saved restaurant
-      const savedRestaurant = await storage.getSavedRestaurant(parseInt(id));
+      // Use the canAccess helper to check ownership
+      const hasAccess = await canAccess(req, 'saved-restaurant', savedRestaurantId);
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Not authorized to delete this saved restaurant" });
+      }
+      
+      // Get the saved restaurant to ensure it exists
+      const savedRestaurant = await storage.getSavedRestaurant(savedRestaurantId);
       if (!savedRestaurant) {
         return res.status(404).json({ message: "Saved restaurant not found" });
       }
 
-      // Check if user owns this saved restaurant
-      if (savedRestaurant.userId !== req.user.id) {
-        return res.status(403).json({ message: "Forbidden" });
-      }
-
       // Delete the saved restaurant
-      await storage.deleteSavedRestaurant(parseInt(id));
+      await storage.deleteSavedRestaurant(savedRestaurantId);
       res.status(204).end();
     } catch (err) {
       console.error("Error deleting saved restaurant:", err);
@@ -819,21 +824,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
 
     try {
-      const { id } = req.params;
+      const friendshipId = parseInt(req.params.id);
+      if (isNaN(friendshipId)) {
+        return res.status(400).json({ message: "Invalid friendship ID" });
+      }
       
-      // Get the friendship
-      const friendship = await storage.getFriend(parseInt(id));
+      // Use the canAccess helper to check if user is part of this friendship
+      const hasAccess = await canAccess(req, 'friend', friendshipId);
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Not authorized to delete this friendship" });
+      }
+      
+      // Get the friendship to ensure it exists
+      const friendship = await storage.getFriend(friendshipId);
       if (!friendship) {
         return res.status(404).json({ message: "Friendship not found" });
       }
       
-      // Check if the user is part of this friendship
-      if (friendship.userId !== req.user.id && friendship.friendId !== req.user.id) {
-        return res.status(403).json({ message: "Forbidden" });
-      }
-      
       // Delete the friendship
-      const success = await storage.deleteFriend(parseInt(id));
+      const success = await storage.deleteFriend(friendshipId);
       
       if (success) {
         res.status(200).json({ message: "Friendship deleted successfully" });
@@ -1057,21 +1067,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
 
     try {
-      const { id } = req.params;
+      const availabilityId = parseInt(req.params.id);
+      if (isNaN(availabilityId)) {
+        return res.status(400).json({ message: "Invalid availability ID" });
+      }
       
-      // Get the availability
-      const availability = await storage.getUserAvailability(parseInt(id));
+      // Use the canAccess helper to check ownership
+      const hasAccess = await canAccess(req, 'availability', availabilityId);
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Not authorized to update this availability" });
+      }
+      
+      // Get the availability to ensure it exists
+      const availability = await storage.getUserAvailability(availabilityId);
       if (!availability) {
         return res.status(404).json({ message: "Availability not found" });
       }
       
-      // Check if the user owns this availability
-      if (availability.userId !== req.user.id) {
-        return res.status(403).json({ message: "Forbidden" });
-      }
-      
       // Update the availability
-      const updatedAvailability = await storage.updateUserAvailability(parseInt(id), req.body);
+      const updatedAvailability = await storage.updateUserAvailability(availabilityId, req.body);
       res.json(updatedAvailability);
     } catch (err) {
       console.error("Error updating availability:", err);
@@ -1143,21 +1158,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
 
     try {
-      const { id } = req.params;
+      const recommendationId = parseInt(req.params.id);
+      if (isNaN(recommendationId)) {
+        return res.status(400).json({ message: "Invalid recommendation ID" });
+      }
       
-      // Get the recommendation
-      const recommendation = await storage.getRestaurantRecommendation(parseInt(id));
+      // Use the canAccess helper to check ownership
+      const hasAccess = await canAccess(req, 'recommendation', recommendationId);
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Not authorized to update this recommendation" });
+      }
+      
+      // Get the recommendation to ensure it exists
+      const recommendation = await storage.getRestaurantRecommendation(recommendationId);
       if (!recommendation) {
         return res.status(404).json({ message: "Recommendation not found" });
       }
       
-      // Check if the user owns this recommendation
-      if (recommendation.userId !== req.user.id) {
-        return res.status(403).json({ message: "Forbidden" });
-      }
-      
       // Mark as viewed
-      const updatedRecommendation = await storage.markRecommendationAsViewed(parseInt(id));
+      const updatedRecommendation = await storage.markRecommendationAsViewed(recommendationId);
       res.json(updatedRecommendation);
     } catch (err) {
       console.error("Error marking recommendation as viewed:", err);
@@ -1253,21 +1273,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
 
     try {
-      const { id } = req.params;
+      const notificationId = parseInt(req.params.id);
+      if (isNaN(notificationId)) {
+        return res.status(400).json({ message: "Invalid notification ID" });
+      }
       
-      // Get the notification
-      const notification = await storage.getNotification(parseInt(id));
+      // Use the canAccess helper to check ownership
+      const hasAccess = await canAccess(req, 'notification', notificationId);
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Not authorized to delete this notification" });
+      }
+      
+      // Get the notification to ensure it exists
+      const notification = await storage.getNotification(notificationId);
       if (!notification) {
         return res.status(404).json({ message: "Notification not found" });
       }
       
-      // Check if the user owns this notification
-      if (notification.userId !== req.user.id) {
-        return res.status(403).json({ message: "Forbidden" });
-      }
-      
       // Delete notification
-      const success = await storage.deleteNotification(parseInt(id));
+      const success = await storage.deleteNotification(notificationId);
       if (success) {
         res.status(204).end();
       } else {
