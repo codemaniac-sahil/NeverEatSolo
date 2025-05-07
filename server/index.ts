@@ -56,8 +56,9 @@ app.use("/api/login", authLimiter);
 app.use("/api/register", authLimiter);
 app.use("/api/auth/*", authLimiter);
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+// Add JSON body size limits to prevent body-bomb attacks
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: false, limit: '10kb' }));
 
 // CSRF protection for all non-GET, non-HEAD requests
 const csrfProtection = csrf({

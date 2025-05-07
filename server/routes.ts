@@ -122,8 +122,8 @@ async function canAccess(req: Request, resourceType: string, resourceId: number)
         const event = await storage.getSpecialEvent(resourceId);
         if (!event) return false;
         
-        // Check if user is the organizer or an attendee
-        if (event.userId === userId) return true;  // Using userId as the organizer
+        // Check if user is the host or an attendee
+        if (event.hostId === userId) return true;  // Using hostId which is the actual field name
         
         const attendees = await storage.getSpecialEventAttendees(resourceId);
         return attendees.some(attendee => attendee.userId === userId);
