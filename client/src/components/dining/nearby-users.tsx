@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { 
   CheckCircle, Filter, Utensils, Heart, X, MapPin, 
-  Search, Coffee, Clock, ChefHat, Star, Users, Leaf 
+  Search, Coffee, Clock, ChefHat, Star, Users, Leaf,
+  AlertCircle
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,11 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
 import { CUISINE_PREFERENCES, DINING_STYLES } from "@shared/constants";
 
 // Toggle this to use mock data
@@ -151,6 +157,8 @@ interface NearbyUsersProps {
 export default function NearbyUsers({ onInvite }: NearbyUsersProps) {
   const { user } = useAuth();
   const [coordinates, setCoordinates] = useState<{ lat: string, lng: string } | null>(null);
+  const [geolocationError, setGeolocationError] = useState<string | null>(null);
+  const [permissionDenied, setPermissionDenied] = useState(false);
   
   // Filter states
   const [searchTerm, setSearchTerm] = useState("");
@@ -165,24 +173,78 @@ export default function NearbyUsers({ onInvite }: NearbyUsersProps) {
   
   // Get current coordinates
   useEffect(() => {
+    // Create abort controller to handle timeouts and permission issues
+    const abortController = new AbortController();
+    const abortSignal = abortController.signal;
+    
+    // Set a timeout to abort after 10 seconds
+    const timeoutId = setTimeout(() => {
+      abortController.abort();
+      setGeolocationError("Location request timed out. Using default location.");
+      // Fallback to default coordinates (NYC)
+      setCoordinates({ lat: "40.7128", lng: "-74.0060" });
+    }, 10000);
+    
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setCoordinates({
-            lat: position.coords.latitude.toString(),
-            lng: position.coords.longitude.toString()
-          });
+          // Clear the timeout since we got a response
+          clearTimeout(timeoutId);
+          
+          if (!abortSignal.aborted) {
+            setCoordinates({
+              lat: position.coords.latitude.toString(),
+              lng: position.coords.longitude.toString()
+            });
+            setGeolocationError(null);
+            setPermissionDenied(false);
+          }
         },
         (error) => {
-          console.error("Error getting location:", error);
-          // Fallback to default coordinates (NYC)
-          setCoordinates({ lat: "40.7128", lng: "-74.0060" });
+          // Clear the timeout since we got a response
+          clearTimeout(timeoutId);
+          
+          if (!abortSignal.aborted) {
+            console.error("Error getting location:", error);
+            
+            let errorMessage = "Unknown location error. Using default location.";
+            
+            // Handle permission denied specifically
+            if (error.code === 1) { // PERMISSION_DENIED
+              errorMessage = "Location permission denied. Some features will be limited.";
+              setPermissionDenied(true);
+            } else if (error.code === 2) { // POSITION_UNAVAILABLE
+              errorMessage = "Location unavailable. Using default location.";
+            } else if (error.code === 3) { // TIMEOUT
+              errorMessage = "Location request timed out. Using default location.";
+            }
+            
+            setGeolocationError(errorMessage);
+            // Fallback to default coordinates (NYC)
+            setCoordinates({ lat: "40.7128", lng: "-74.0060" });
+          }
+        },
+        { 
+          enableHighAccuracy: false,
+          timeout: 8000,
+          maximumAge: 60000,
+          signal: abortSignal
         }
       );
     } else {
+      // Clear the timeout since geolocation is not supported
+      clearTimeout(timeoutId);
+      
       // Fallback if geolocation is not supported
+      setGeolocationError("Geolocation is not supported by your browser. Using default location.");
       setCoordinates({ lat: "40.7128", lng: "-74.0060" });
     }
+    
+    // Cleanup function
+    return () => {
+      clearTimeout(timeoutId);
+      abortController.abort();
+    };
   }, []);
 
   // Fetch nearby users from API or use mock data in demo mode
@@ -297,6 +359,50 @@ export default function NearbyUsers({ onInvite }: NearbyUsersProps) {
 
   return (
     <div>
+      {/* Geolocation error alert */}
+      {geolocationError && (
+        <Alert className="mb-4 border-amber-600/30 bg-amber-600/10 text-amber-100" variant="default">
+          <AlertCircle className="h-5 w-5 text-amber-400" />
+          <div className="ml-3">
+            <AlertTitle className="text-amber-200">Location Service Issue</AlertTitle>
+            <AlertDescription className="text-amber-100/80 text-sm">
+              {geolocationError}
+              {permissionDenied && (
+                <div className="mt-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-8 px-2 text-amber-100 border-amber-600/50 bg-amber-600/20 hover:bg-amber-600/30"
+                    onClick={() => {
+                      // Prompt for location permissions again
+                      if (navigator.geolocation) {
+                        setGeolocationError("Requesting location access...");
+                        navigator.geolocation.getCurrentPosition(
+                          (position) => {
+                            setCoordinates({
+                              lat: position.coords.latitude.toString(),
+                              lng: position.coords.longitude.toString()
+                            });
+                            setGeolocationError(null);
+                            setPermissionDenied(false);
+                          },
+                          (error) => {
+                            setGeolocationError("Location permission still denied. Features will be limited.");
+                            setPermissionDenied(true);
+                          }
+                        );
+                      }
+                    }}
+                  >
+                    Allow Location Access
+                  </Button>
+                </div>
+              )}
+            </AlertDescription>
+          </div>
+        </Alert>
+      )}
+      
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-5">
         <div className="relative w-full md:w-72">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-500" />

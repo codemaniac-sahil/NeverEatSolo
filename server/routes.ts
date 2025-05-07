@@ -65,6 +65,13 @@ async function canAccess(req: Request, resourceType: string, resourceId: number)
         return invitation.senderId === userId || invitation.receiverId === userId;
       }
       
+      case 'invitation-receiver': {
+        const invitation = await storage.getInvitation(resourceId);
+        if (!invitation) return false;
+        // Check if user is specifically the receiver of the invitation
+        return invitation.receiverId === userId;
+      }
+      
       case 'saved-restaurant': {
         const savedRestaurant = await storage.getSavedRestaurant(resourceId);
         if (!savedRestaurant) return false;
@@ -303,24 +310,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
 
     try {
-      const { id } = req.params;
+      const invitationId = parseInt(req.params.id);
+      if (isNaN(invitationId)) {
+        return res.status(400).json({ message: "Invalid invitation ID" });
+      }
+      
       const { status } = req.body;
       
       if (!status || !["accepted", "declined"].includes(status)) {
         return res.status(400).json({ message: "Invalid status" });
       }
 
-      const invitation = await storage.getInvitation(parseInt(id));
+      // Use the canAccess helper to check if user is the receiver
+      const hasAccess = await canAccess(req, 'invitation-receiver', invitationId);
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Not authorized to update this invitation" });
+      }
+
+      const invitation = await storage.getInvitation(invitationId);
       if (!invitation) {
         return res.status(404).json({ message: "Invitation not found" });
       }
 
-      // Check if the user is the receiver of the invitation
-      if (invitation.receiverId !== req.user.id) {
-        return res.status(403).json({ message: "Forbidden" });
-      }
-
-      const updatedInvitation = await storage.updateInvitationStatus(parseInt(id), status);
+      const updatedInvitation = await storage.updateInvitationStatus(invitationId, status);
       res.json(updatedInvitation);
     } catch (err) {
       res.status(500).json({ message: "Failed to update invitation status" });
@@ -343,21 +356,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
 
     try {
-      const { id } = req.params;
+      const invitationId = parseInt(req.params.id);
+      if (isNaN(invitationId)) {
+        return res.status(400).json({ message: "Invalid invitation ID" });
+      }
+      
       const { outlookEventId } = req.body;
       
       if (!outlookEventId) {
         return res.status(400).json({ message: "Outlook event ID is required" });
       }
       
-      const invitation = await storage.getInvitation(parseInt(id));
-      if (!invitation) {
-        return res.status(404).json({ message: "Invitation not found" });
+      // Use the canAccess helper to check if user is part of this invitation
+      const hasAccess = await canAccess(req, 'invitation', invitationId);
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Not authorized to sync this invitation" });
       }
       
-      // Check if the user is authorized to sync this invitation (sender or receiver)
-      if (invitation.senderId !== req.user.id && invitation.receiverId !== req.user.id) {
-        return res.status(403).json({ message: "Forbidden" });
+      const invitation = await storage.getInvitation(invitationId);
+      if (!invitation) {
+        return res.status(404).json({ message: "Invitation not found" });
       }
       
       // Make sure user has Microsoft integration enabled
@@ -368,7 +387,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Update invitation with calendar sync info
       const updatedInvitation = await storage.updateInvitationCalendarInfo(
-        parseInt(id),
+        invitationId,
         outlookEventId,
         true,
         new Date()
@@ -1235,21 +1254,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
 
     try {
-      const { id } = req.params;
+      const notificationId = parseInt(req.params.id);
+      if (isNaN(notificationId)) {
+        return res.status(400).json({ message: "Invalid notification ID" });
+      }
       
-      // Get the notification
-      const notification = await storage.getNotification(parseInt(id));
+      // Use the canAccess helper to check ownership
+      const hasAccess = await canAccess(req, 'notification', notificationId);
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Not authorized to update this notification" });
+      }
+      
+      // Get the notification to ensure it exists
+      const notification = await storage.getNotification(notificationId);
       if (!notification) {
         return res.status(404).json({ message: "Notification not found" });
       }
       
-      // Check if the user owns this notification
-      if (notification.userId !== req.user.id) {
-        return res.status(403).json({ message: "Forbidden" });
-      }
-      
       // Mark as read
-      const updatedNotification = await storage.markNotificationAsRead(parseInt(id));
+      const updatedNotification = await storage.markNotificationAsRead(notificationId);
       res.json(updatedNotification);
     } catch (err) {
       console.error("Error marking notification as read:", err);
