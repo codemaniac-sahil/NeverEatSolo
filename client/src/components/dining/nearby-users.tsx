@@ -697,18 +697,20 @@ export default function NearbyUsers({ onInvite }: NearbyUsersProps) {
           </div>
         </div>
         
-        {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {[1, 2].map((_, i) => (
-              <div key={i} className="h-80 bg-neutral-100 animate-pulse rounded-lg" />
-            ))}
-          </div>
-        ) : nearbyUsers.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-neutral-600">No dining companions found nearby.</p>
-            <p className="text-sm text-neutral-500 mt-2">Try expanding your search radius.</p>
-          </div>
-        ) : (
+        <Card>
+          <CardContent>
+            {isLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[1, 2].map((_, i) => (
+                  <div key={i} className="h-80 bg-neutral-100 animate-pulse rounded-lg" />
+                ))}
+              </div>
+            ) : nearbyUsers.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-neutral-600">No dining companions found nearby.</p>
+                <p className="text-sm text-neutral-500 mt-2">Try expanding your search radius.</p>
+              </div>
+            ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {nearbyUsers.slice(0, 4).map((nearbyUser: User, i: number) => (
