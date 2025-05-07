@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, json, primaryKey, numeric } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, json, primaryKey, numeric, index } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -12,8 +12,8 @@ export const organizations = pgTable("organizations", {
   primaryColor: text("primary_color"), // For branding
   description: text("description"),
   address: text("address"),
-  locationLat: text("location_lat"),
-  locationLng: text("location_lng"),
+  locationLat: numeric("location_lat", { precision: 9, scale: 6 }),
+  locationLng: numeric("location_lng", { precision: 9, scale: 6 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   isActive: boolean("is_active").default(true).notNull(),
   adminEmail: text("admin_email"), // Organization admin contact
@@ -40,8 +40,8 @@ export const workspaces = pgTable("workspaces", {
   organizationId: integer("organization_id").notNull().references(() => organizations.id),
   name: text("name").notNull(),
   address: text("address").notNull(),
-  locationLat: text("location_lat").notNull(),
-  locationLng: text("location_lng").notNull(),
+  locationLat: numeric("location_lat", { precision: 9, scale: 6 }).notNull(),
+  locationLng: numeric("location_lng", { precision: 9, scale: 6 }).notNull(),
   floor: text("floor"),
   buildingName: text("building_name"),
   description: text("description"),
