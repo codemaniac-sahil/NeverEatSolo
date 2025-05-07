@@ -98,22 +98,39 @@ export function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res, next) => {
     try {
+      // Extract registration data
+      const { 
+        username, 
+        password, 
+        email, 
+        firstName, 
+        lastName, 
+        dietary, 
+        typicalLunch 
+      } = req.body;
+
       // Check if username exists
-      const existingUsername = await storage.getUserByUsername(req.body.username);
+      const existingUsername = await storage.getUserByUsername(username);
       if (existingUsername) {
         return res.status(400).json({ message: "Username already exists" });
       }
 
       // Check if email exists
-      const existingEmail = await storage.getUserByEmail(req.body.email);
+      const existingEmail = await storage.getUserByEmail(email);
       if (existingEmail) {
         return res.status(400).json({ message: "Email already exists" });
       }
 
       // Create user with hashed password
       const user = await storage.createUser({
-        ...req.body,
-        password: await hashPassword(req.body.password),
+        username,
+        password: await hashPassword(password),
+        email,
+        name: `${firstName} ${lastName}`,
+        dietary,
+        typicalLunch,
+        isVerified: false, // Will require email verification in the future
+        lastActive: new Date()
       });
 
       // Login the user
@@ -124,6 +141,10 @@ export function setupAuth(app: Express) {
         res.status(201).json(userWithoutPassword);
       });
     } catch (err) {
+      console.error("Registration error:", err);
+      if (err instanceof Error) {
+        return res.status(400).json({ message: err.message });
+      }
       next(err);
     }
   });
