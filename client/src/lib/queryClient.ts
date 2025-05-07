@@ -59,8 +59,9 @@ export const queryClient = new QueryClient({
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
-      refetchOnWindowFocus: false,
-      staleTime: Infinity,
+      refetchOnWindowFocus: true,
+      // Use more reasonable staleTime values
+      staleTime: 5 * 60 * 1000, // 5 minutes for most data
       retry: false,
     },
     mutations: {
@@ -68,3 +69,35 @@ export const queryClient = new QueryClient({
     },
   },
 });
+
+// Helper function to get category-specific query options
+export const getQueryOptions = (category: 'location' | 'user' | 'static' | 'dynamic') => {
+  switch (category) {
+    case 'location':
+      return {
+        staleTime: 2 * 60 * 1000, // 2 minutes for location-based data
+        refetchOnWindowFocus: true
+      };
+    case 'user':
+      return {
+        staleTime: 10 * 60 * 1000, // 10 minutes for user profile data
+        refetchOnWindowFocus: true
+      };
+    case 'static':
+      return {
+        staleTime: 24 * 60 * 60 * 1000, // 1 day for static data like cuisines
+        refetchOnWindowFocus: false
+      };
+    case 'dynamic':
+      return {
+        staleTime: 30 * 1000, // 30 seconds for very dynamic data
+        refetchOnWindowFocus: true,
+        refetchInterval: 60 * 1000 // Poll every minute
+      };
+    default:
+      return {
+        staleTime: 5 * 60 * 1000, // 5 minutes default
+        refetchOnWindowFocus: true
+      };
+  }
+};

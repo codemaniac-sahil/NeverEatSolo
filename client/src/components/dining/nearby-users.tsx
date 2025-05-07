@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
+import { getQueryOptions } from "@/lib/queryClient";
 import { 
   CheckCircle, Filter, Utensils, Heart, X, MapPin, 
   Search, Coffee, Clock, ChefHat, Star, Users, Leaf,
@@ -227,8 +228,8 @@ export default function NearbyUsers({ onInvite }: NearbyUsersProps) {
         { 
           enableHighAccuracy: false,
           timeout: 8000,
-          maximumAge: 60000,
-          signal: abortSignal
+          maximumAge: 60000
+          // signal: abortSignal - not supported in standard PositionOptions
         }
       );
     } else {
@@ -257,6 +258,7 @@ export default function NearbyUsers({ onInvite }: NearbyUsersProps) {
       return response.json();
     },
     enabled: !DEMO_MODE && !!coordinates && !!user,
+    ...getQueryOptions('location'), // Use location-specific cache settings
   });
   
   // Use mock data in demo mode, otherwise use data from API
