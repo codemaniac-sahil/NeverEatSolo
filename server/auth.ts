@@ -18,24 +18,45 @@ const scryptAsync = promisify(scrypt);
 async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `${buf.toString("hex")}.${salt}`;
+  // Add version prefix for future upgrades
+  return `v1$${buf.toString("hex")}.${salt}`;
 }
 
 async function comparePasswords(supplied: string, stored: string) {
-  const [hashed, salt] = stored.split(".");
-  const hashedBuf = Buffer.from(hashed, "hex");
-  const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-  return timingSafeEqual(hashedBuf, suppliedBuf);
+  // Handle versioned password formats
+  if (stored.startsWith('v1$')) {
+    // Version 1 format: v1$hash.salt
+    const [, hashAndSalt] = stored.split('$');
+    const [hashed, salt] = hashAndSalt.split(".");
+    const hashedBuf = Buffer.from(hashed, "hex");
+    const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+    return timingSafeEqual(hashedBuf, suppliedBuf);
+  } else {
+    // Legacy format (no version): hash.salt
+    const [hashed, salt] = stored.split(".");
+    const hashedBuf = Buffer.from(hashed, "hex");
+    const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+    return timingSafeEqual(hashedBuf, suppliedBuf);
+  }
 }
 
 export function setupAuth(app: Express) {
+  // Fail fast if environment variable is missing
+  if (!process.env.SESSION_SECRET) {
+    console.error("SESSION_SECRET environment variable is missing!");
+    process.exit(1);
+  }
+  
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || "never-dine-alone-session-secret",
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
     cookie: {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      secure: process.env.NODE_ENV === "production", // Only use secure cookies in production
+      sameSite: "lax", // Helps prevent CSRF attacks
+      httpOnly: true, // Prevents client-side JS from reading the cookie
     }
   };
 
